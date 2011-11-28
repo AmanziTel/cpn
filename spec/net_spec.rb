@@ -422,21 +422,21 @@ describe CPN::Net do
       end
     end
 
-    describe "after occurring 1000 times" do
-      before do
-#        @cpn.states[:Received].add_observer(StateObserver.new)
-#        @cpn.states[:NextSend].add_observer(StateObserver.new)
-#        @cpn.transitions[:ReceivePacket].add_observer(TransitionObserver.new)
-        2000.times { @cpn.occur_next }
-      end
-
-      it "should have sent, received and acknowledged all messages" do
-        @cpn.states[:Received].marking.should == [
-          "Modelling and Analysis by Means of Coloured Petri Nets##"
-        ]
-        @cpn.states[:NextSend].marking.should == [ 8 ]
-      end
-    end
+#    describe "after occurring 2000 times" do
+#      before do
+##        @cpn.states[:Received].add_observer(StateObserver.new)
+##        @cpn.states[:NextSend].add_observer(StateObserver.new)
+##        @cpn.transitions[:ReceivePacket].add_observer(TransitionObserver.new)
+#        2000.times { @cpn.occur_next }
+#      end
+#
+#      it "should have sent, received and acknowledged all messages" do
+#        @cpn.states[:Received].marking.should == [
+#          "Modelling and Analysis by Means of Coloured Petri Nets##"
+#        ]
+#        @cpn.states[:NextSend].marking.should == [ 8 ]
+#      end
+#    end
 
   end
 

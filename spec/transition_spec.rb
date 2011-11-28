@@ -34,42 +34,42 @@ describe CPN::Transition do
       end
 
       it "should have none for an empty list of arcs" do
-        atcs = @t.arc_token_combinations([])
+        atcs = CPN::ArcTokenCombination.all([])
         atcs.should be_empty
       end
 
       it "should have 1 given one incoming arc with one token" do
-        atcs = @t.arc_token_combinations([ @cpn.arc_between(:A, :T) ])
+        atcs = CPN::ArcTokenCombination.all([ @cpn.arc_between(:A, :T) ])
         atcs.length.should == 1
-        atcs.first.first[:token].should == 'a'
-        atcs.first.first[:arc].should == @cpn.arc_between(:A, :T)
+        atcs.first.first.token.should == 'a'
+        atcs.first.first.arc.should == @cpn.arc_between(:A, :T)
       end
 
       it "should have 2 given one incoming arc with two tokens" do
-        atcs = @t.arc_token_combinations([ @cpn.arc_between(:B, :T) ])
+        atcs = CPN::ArcTokenCombination.all([ @cpn.arc_between(:B, :T) ])
         atcs.length.should == 2
         atcs.first.length.should == 1
-        atcs.first.first[:token].should == 'a'
-        atcs.first.first[:arc].should == @cpn.arc_between(:B, :T)
+        atcs.first.first.token.should == 'a'
+        atcs.first.first.arc.should == @cpn.arc_between(:B, :T)
         atcs.last.length.should == 1
-        atcs.last.first[:token].should == 'b'
-        atcs.last.first[:arc].should == @cpn.arc_between(:B, :T)
+        atcs.last.first.token.should == 'b'
+        atcs.last.first.arc.should == @cpn.arc_between(:B, :T)
       end
 
       it "should have 2 given two incoming arcs with 1 and 2 tokens" do
-        atcs = @t.arc_token_combinations(@t.incoming)
+        atcs = CPN::ArcTokenCombination.all(@t.incoming)
         atcs.length.should == 2
         atcs.first.length.should == 2
-        atcs.first.first[:token].should == 'a'
-        atcs.first.first[:arc].should == @cpn.arc_between(:A, :T)
-        atcs.first.last[:token].should == 'a'
-        atcs.first.last[:arc].should == @cpn.arc_between(:B, :T)
+        atcs.first.first.token.should == 'a'
+        atcs.first.first.arc.should == @cpn.arc_between(:A, :T)
+        atcs.first.last.token.should == 'a'
+        atcs.first.last.arc.should == @cpn.arc_between(:B, :T)
 
         atcs.last.length.should == 2
-        atcs.last.first[:token].should == 'a'
-        atcs.last.first[:arc].should == @cpn.arc_between(:A, :T)
-        atcs.last.last[:token].should == 'b'
-        atcs.last.last[:arc].should == @cpn.arc_between(:B, :T)
+        atcs.last.first.token.should == 'a'
+        atcs.last.first.arc.should == @cpn.arc_between(:A, :T)
+        atcs.last.last.token.should == 'b'
+        atcs.last.last.arc.should == @cpn.arc_between(:B, :T)
       end
 
       it "should be enabled" do
