@@ -17,7 +17,7 @@ module CPN
       changed
       notify_observers(self, :start, true)
 
-      context = binding_for(arc_tokens)
+      context = EvaluationContext.merged(arc_tokens.map{|at| at[:binding]})
       arc_tokens.each do |at|
         arc, token = at[:arc], at[:token]
         arc.remove_token(token)
@@ -35,16 +35,8 @@ module CPN
     def valid_arc_token_combinations
       atcs = arc_token_combinations(@incoming)
       atcs.reject do |arc_tokens|
-        context = binding_for(arc_tokens)
+        context = EvaluationContext.merged(arc_tokens.map{|at| at[:binding]})
         context.empty? || !context.eval_guard(@guard)
-      end
-    end
-
-    def binding_for(arc_tokens)
-      arc_tokens.inject(EvaluationContext.new) do |binding, arc_token|
-        next_binding = arc_token[:binding]
-        return [] unless binding.compatible?(next_binding)
-        binding.merge! next_binding
       end
     end
 

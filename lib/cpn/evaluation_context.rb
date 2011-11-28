@@ -47,6 +47,13 @@ module CPN
       end
     end
 
+    def self.merged(bindings)
+      bindings.inject(EvaluationContext.new) do |binding, next_binding|
+        return [] unless binding.compatible?(next_binding)
+        binding.merge! next_binding
+      end
+    end
+
     def merge!(other)
       raise "Can't merge incompatible contexts" and return unless compatible?(other)
       other.var_names.each do |name|
