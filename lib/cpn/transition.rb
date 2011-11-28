@@ -90,7 +90,7 @@ module CPN
     end
 
     def self.as_context(arc_token_combinations)
-      EvaluationContext.merged(arc_token_combinations.map{|atc| atc.binding})
+      TransitionContext.by_merging(arc_token_combinations.map{|atc| atc.binding})
     end
   end
 end

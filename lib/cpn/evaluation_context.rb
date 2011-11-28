@@ -16,16 +16,6 @@ module CPN
       @var_names ||= eval "local_variables", get_binding
     end
 
-    def eval_output(expr)
-      return eval(expr, get_binding) unless expr.nil? || expr.length == 0
-      variable_get(var_names.first) if var_names.size == 1
-    end
-
-    def eval_guard(expr)
-      return eval(expr, get_binding) unless expr.nil? || expr.length == 0
-      true
-    end
-
     def variable_get(name)
       locals[name.to_sym]
     end
@@ -41,27 +31,6 @@ module CPN
       @locals = nil
     end
 
-    def compatible?(other)
-      (var_names & other.var_names).all? do |name|
-        variable_get(name) == other.variable_get(name)
-      end
-    end
-
-    def self.merged(bindings)
-      bindings.inject(EvaluationContext.new) do |binding, next_binding|
-        return [] unless binding.compatible?(next_binding)
-        binding.merge! next_binding
-      end
-    end
-
-    def merge!(other)
-      raise "Can't merge incompatible contexts" and return unless compatible?(other)
-      other.var_names.each do |name|
-        set(name, other.variable_get(name))
-      end
-      self
-    end
-
     def empty?
       var_names.empty?
     end
@@ -74,16 +43,51 @@ module CPN
       to_hash.inspect
     end
 
-    private
-
     # Use a local method scope as the binding
     def get_binding
       @binding ||= binding
     end
 
+    private
+
     # Return a hash of visible variable names to their values in the current context
     def locals
       @locals ||= var_names.inject({}) { |memo, v| memo.merge!({ v => eval(v.to_s, get_binding) }) }
+    end
+
+  end
+
+  class TransitionContext < EvaluationContext
+
+    def self.by_merging(evaluation_contexts)
+      evaluation_contexts.inject(TransitionContext.new) do |context, next_context|
+        return [] unless context.compatible?(next_context)
+        context.merge! next_context
+      end
+    end
+
+    def merge!(other)
+      raise "Can't merge incompatible contexts" and return unless compatible?(other)
+      other.var_names.each do |name|
+        set(name, other.variable_get(name))
+      end
+      self
+    end
+
+    def compatible?(other)
+      (var_names & other.var_names).all? do |name|
+        variable_get(name) == other.variable_get(name)
+      end
+    end
+
+    def eval_output(expr)
+      return eval(expr, get_binding) unless expr.nil? || expr.length == 0
+      variable_get(var_names.first) if var_names.size == 1
+    end
+
+    def eval_guard(expr)
+      return eval(expr, get_binding) unless expr.nil? || expr.length == 0
+      true
     end
 
   end
