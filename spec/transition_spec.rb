@@ -34,19 +34,19 @@ describe CPN::Transition do
       end
 
       it "should have none for an empty list of arcs" do
-        atcs = CPN::ArcTokenCombination.all([])
+        atcs = CPN::ArcTokenBinding.all([])
         atcs.should be_empty
       end
 
       it "should have 1 given one incoming arc with one token" do
-        atcs = CPN::ArcTokenCombination.all([ @cpn.arc_between(:A, :T) ])
+        atcs = CPN::ArcTokenBinding.all([ @cpn.arc_between(:A, :T) ])
         atcs.length.should == 1
         atcs.first.first.token.should == 'a'
         atcs.first.first.arc.should == @cpn.arc_between(:A, :T)
       end
 
       it "should have 2 given one incoming arc with two tokens" do
-        atcs = CPN::ArcTokenCombination.all([ @cpn.arc_between(:B, :T) ])
+        atcs = CPN::ArcTokenBinding.all([ @cpn.arc_between(:B, :T) ])
         atcs.length.should == 2
         atcs.first.length.should == 1
         atcs.first.first.token.should == 'a'
@@ -57,7 +57,7 @@ describe CPN::Transition do
       end
 
       it "should have 2 given two incoming arcs with 1 and 2 tokens" do
-        atcs = CPN::ArcTokenCombination.all(@t.incoming)
+        atcs = CPN::ArcTokenBinding.all(@t.incoming)
         atcs.length.should == 2
         atcs.first.length.should == 2
         atcs.first.first.token.should == 'a'
@@ -82,7 +82,7 @@ describe CPN::Transition do
 
   context "1 transition with a guard, used as a 0..2 counter" do
 
-    #  (Counter)0 ---{n}--> (Incr){n < 2}
+    #  (Counter)0 ---{n}--> [Incr]{n < 2}
     #       ^                  |
     #       --------{n+1}<------
     before do

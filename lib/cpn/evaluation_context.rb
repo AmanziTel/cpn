@@ -80,9 +80,16 @@ module CPN
       end
     end
 
-    def eval_output(expr)
-      return eval(expr, get_binding) unless expr.nil? || expr.length == 0
-      variable_get(var_names.first) if var_names.size == 1
+    def eval_output(expr, at_time)
+      if !expr.nil? && expr.length > 0
+        token = eval(expr, get_binding)
+      elsif var_names.size == 1
+        token = variable_get(var_names.first)
+      else
+        return nil
+      end
+      return token.ready_at(at_time + (token.ready? || 0)) if token.respond_to? :ready_at
+      token
     end
 
     def eval_guard(expr)

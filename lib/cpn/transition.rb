@@ -9,7 +9,11 @@ module CPN
       valid_arc_token_combinations.length > 0
     end
 
-    def occur
+    def ready?(at_time)
+      min_distance_to_valid_combo(at_time) == 0
+    end
+
+    def occur(at_time = 0)
       atcs = valid_arc_token_combinations
       return false if atcs.empty?
       arc_tokens = atcs.sample
@@ -17,13 +21,13 @@ module CPN
       changed
       notify_observers(self, :start, true)
 
-      context = ArcTokenCombination.as_context(arc_tokens)
+      context = ArcTokenBinding.as_context(arc_tokens)
       arc_tokens.each do |at|
         at.arc.remove_token(at.token)
       end
 
       @outgoing.each do |arc|
-        token = context.eval_output(arc.expr)
+        token = context.eval_output(arc.expr, at_time)
         arc.add_token(token) unless token.nil?
       end
 
@@ -31,12 +35,21 @@ module CPN
       notify_observers(self, :end, enabled?)
     end
 
+    def arc_token_combinations
+      ArcTokenBinding.all(@incoming)
+    end
+
     def valid_arc_token_combinations
-      atcs = ArcTokenCombination.all(@incoming)
-      atcs.reject do |arc_tokens|
-        context = ArcTokenCombination.as_context(arc_tokens)
+      arc_token_combinations.reject do |arc_tokens|
+        context = ArcTokenBinding.as_context(arc_tokens)
         context.empty? || !context.eval_guard(@guard)
       end
+    end
+
+    def min_distance_to_valid_combo(at_time)
+      min = valid_arc_token_combinations.map do |arc_tokens|
+        arc_tokens.map { |binding| (binding.token.ready? || 0) - at_time }.max
+      end.min
     end
 
     def to_s
@@ -47,6 +60,7 @@ module CPN
       hash = {
         :name => name,
         :enabled => enabled?,
+        :ready => ready?,
         :guard => guard
       }
       hash[:x] = x unless x.nil?
@@ -56,7 +70,7 @@ module CPN
 
   end
 
-  class ArcTokenCombination
+  class ArcTokenBinding
     attr_accessor :token, :arc, :binding
 
     def initialize(arc, token)
@@ -74,7 +88,7 @@ module CPN
     # etc. (all combinations)
     def self.all(arcs)
       return [] if arcs.length == 0
-      first_ats = arcs.first.tokens.map { |t| ArcTokenCombination.new(arcs.first, t) }
+      first_ats = arcs.first.tokens.map { |t| ArcTokenBinding.new(arcs.first, t) }
       return [] if first_ats.length == 0
       return first_ats.map{|at| [ at ] }  if arcs.length == 1
 
@@ -92,6 +106,7 @@ module CPN
     def self.as_context(arc_token_combinations)
       TransitionContext.by_merging(arc_token_combinations.map{|atc| atc.binding})
     end
+
   end
 end
 

@@ -3,7 +3,7 @@ require File.expand_path("#{File.dirname __FILE__}/state")
 
 module CPN
   class Net
-    attr_reader :name, :states, :transitions, :arcs
+    attr_reader :name, :states, :transitions, :arcs, :time
 
     def self.build(name, &block)
       cp = Net.new(name)
@@ -15,6 +15,7 @@ module CPN
       @name = name
       @states, @transitions = {}, {}
       @arcs = []
+      @time = 0
     end
 
     def state(name, init = nil, &block)
@@ -62,7 +63,11 @@ module CPN
     end
 
     def occur_next
-      @transitions.values.select(&:enabled?).sample.occur
+      @transitions.values.select(&:enabled?).sample.occur(@time)
+    end
+
+    def advance_time
+      @time += @transitions.values.map{ |t| t.min_distance_to_valid_combo(@time) }.min
     end
 
     def to_s
