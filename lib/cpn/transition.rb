@@ -36,7 +36,7 @@ module CPN
       atcs = arc_token_combinations(@incoming)
       atcs.reject do |arc_tokens|
         context = binding_for(arc_tokens)
-        context.empty? #|| (@guard.present? && !context.eval_guard(@guard))
+        context.empty? || !context.eval_guard(@guard)
       end
     end
 

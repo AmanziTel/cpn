@@ -2,10 +2,6 @@ module CPN
   # TODO: Wrap the evals here in a sandboxed environment
   class EvaluationContext
 
-    def get_binding
-      @binding ||= binding
-    end
-
     # An incoming arc token binding sets up the context for evaluation
     # An expr would typically have the form @x, @y and a token an array with two items.
     def self.setup(expr, token)
@@ -13,6 +9,11 @@ module CPN
       expr = "token" if expr.nil? || expr.length == 0
       ctx.set(expr, token)
       ctx
+    end
+
+    # What variable names (symbols) are active in the current context?
+    def var_names
+      @var_names ||= eval "local_variables", get_binding
     end
 
     def eval_output(expr)
@@ -25,19 +26,16 @@ module CPN
       true
     end
 
-    def var_names
-      @var_names ||= eval "local_variables", get_binding
-    end
-
-    def locals
-      @locals ||= var_names.inject({}) { |memo, v| memo.merge!({ v => eval(v.to_s, get_binding) }) }
-    end
-
     def variable_get(name)
       locals[name.to_sym]
     end
 
     def set(lvalue, value)
+      # "Set the lvalue to nil if false" is done to define the variables in the lvalue as local
+      # variables visible from outside the lambda block. Otherwise they are defined by the lambda
+      # as local to that.
+      # The lambda is used so that values that can't easily be represented as text (e.g. objects)
+      # can be assigned to also. If we restrict values (tokens) to be JSON data this is not needed.
       (eval("#{lvalue} = nil if false ; lambda { |v| #{lvalue} = v }", get_binding)).call(value)
       @var_names = nil
       @locals = nil
@@ -67,6 +65,18 @@ module CPN
 
     def to_s
       to_hash.inspect
+    end
+
+    private
+
+    # Use a local method scope as the binding
+    def get_binding
+      @binding ||= binding
+    end
+
+    # Return a hash of visible variable names to their values in the current context
+    def locals
+      @locals ||= var_names.inject({}) { |memo, v| memo.merge!({ v => eval(v.to_s, get_binding) }) }
     end
 
   end

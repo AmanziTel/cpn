@@ -80,4 +80,66 @@ describe CPN::Transition do
 
   end
 
+  context "1 transition with a guard, used as a 0..2 counter" do
+
+    #  (Counter)0 ---{n}--> (Incr){n < 2}
+    #       ^                  |
+    #       --------{n+1}<------
+    before do
+      @cpn = CPN.build :ex2 do
+
+        state :Counter do |s|
+          s.initial = "0"
+        end
+
+        transition :Incr do |t|
+          t.guard = "n < 2"
+        end
+
+        arc :Counter, :Incr do |a|
+          a.expr = "n"
+        end
+
+        arc :Incr, :Counter do |a|
+          a.expr = "n + 1"
+        end
+
+      end
+    end
+
+    describe "the transition, " do
+      before do
+        @t = @cpn.transitions[:Incr]
+      end
+
+      it "should be enabled" do
+        @t.should be_enabled
+      end
+
+      describe "after firing" do
+        before do
+          @t.occur
+        end
+
+        it "should still be enabled" do
+          @cpn.states[:Counter].marking.first.should == 1
+          @t.should be_enabled
+        end
+
+        describe "twice" do
+          before do
+            @t.occur
+          end
+
+          it "should not be enabled" do
+            @cpn.states[:Counter].marking.first.should == 2
+            @t.should_not be_enabled
+          end
+
+        end
+      end
+
+    end
+  end
+
 end
