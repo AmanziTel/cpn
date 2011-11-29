@@ -21,7 +21,7 @@ Dir.glob "#{File.dirname __FILE__}/cpn/*.rb" do |f|
                            File.basename(f, '.rb'))
 end
 
-# Include HasTimedAvailability into Fixnum and Array
+# Include HasTimedAvailability into a few classes often used as tokens
 class Fixnum
   include CPN::TimedAvailability
 end

@@ -442,26 +442,15 @@ describe CPN::Net do
 
   context "Timed net: 1 timed transition, used as a 3-second counter," do
 
-    #  (Time)0@[1] ---{n}--> [Clock]
+    #  (Time)1@[3] ---{n}--> [Clock]
     #       ^                  |
-    #       ---{n + 1@[+1]}<----
+    #       ---{n + 1@[+3]}<----
     before do
       @cpn = CPN.build :timed_ex1 do
-
-        state :Time do |s|
-          s.initial = "1.ready_at(3)"
-        end
-
+        state :Time { |s| s.initial = "1.ready_at(3)" }
         transition :Clock
-
-        arc :Time, :Clock do |a|
-          a.expr = "n"
-        end
-
-        arc :Clock, :Time do |a|
-          a.expr = "(n + 1).ready_at(+3)"
-        end
-
+        arc :Time, :Clock { |a| a.expr = "n" }
+        arc :Clock, :Time { |a| a.expr = "(n + 1).ready_at(+3)" }
       end
     end
 
@@ -485,6 +474,7 @@ describe CPN::Net do
       describe "when advancing the time" do
         before do
           @cpn.advance_time
+          @cpn.time.should == 3
         end
 
         it "should still be enabled" do
