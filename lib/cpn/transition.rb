@@ -60,7 +60,6 @@ module CPN
       hash = {
         :name => name,
         :enabled => enabled?,
-        :ready => ready?,
         :guard => guard
       }
       hash[:x] = x unless x.nil?
