@@ -447,10 +447,10 @@ describe CPN::Net do
     #       ---{n + 1@[+3]}<----
     before do
       @cpn = CPN.build :timed_ex1 do
-        state :Time { |s| s.initial = "1.ready_at(3)" }
+        state(:Time) { |s| s.initial = "1.ready_at(3)" }
         transition :Clock
-        arc :Time, :Clock { |a| a.expr = "n" }
-        arc :Clock, :Time { |a| a.expr = "(n + 1).ready_at(+3)" }
+        arc(:Time, :Clock) { |a| a.expr = "n" }
+        arc(:Clock, :Time) { |a| a.expr = "(n + 1).ready_at(+3)" }
       end
     end
 
