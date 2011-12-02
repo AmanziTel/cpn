@@ -511,7 +511,6 @@ describe CPN::Net do
   context "Hierarchical net" do
     before do
       @cpn = CPN.build :TopLevel do
-        capacity = 5
         state :Waiting, "{ :make => 'Honda' }"
         state :OnRamp1
         state :OnRamp1Count
@@ -523,7 +522,9 @@ describe CPN::Net do
           state :In
           state :Out
           state :OutCount
-          transition :Move, "count < CAPACITY"
+          transition :Move do |t| 
+            t.guard = "count < 5"
+          end
           arc :In, :Move, "c"
           arc :Move, :Out, "c"
           arc :OutCount, :Move, "count"
@@ -535,7 +536,9 @@ describe CPN::Net do
           state :Out
           state :InCount
           state :OutCount
-          transition :Move, "outcount < CAPACITY"
+          transition :Move do |t| 
+            t.guard = "outcount < capacity"
+          end
           arc :In, :Move, "c"
           arc :InCount, :Move, "incount"
           arc :Move, :InCount, "incount - 1"
@@ -544,20 +547,20 @@ describe CPN::Net do
           arc :Move, :OutCount, "outcount + 1"
         end
 
-        transition :StartRamp, :hs => :OnRamp do |t|
+        hs_transition :StartRamp, :OnRamp do |t|
           t.fuse :Waiting, :In
           t.fuse :OnRamp1, :Out
           t.fuse :OnRamp1Count, :OutCount
         end
 
-        transition :Move1, :hs => :Road do |t|
+        hs_transition :Move1, :Road do |t|
           t.fuse :OnRamp1, :In
           t.fuse :OnRamp1Count, :InCount
           t.fuse :Road1, :Out
           t.fuse :Road1Count, :OutCount
         end
 
-        transition :Move2, :hs => :Road do |t|
+        hs_transition :Move2, :Road do |t|
           t.fuse :Road1, :In
           t.fuse :Road1Count, :InCount
           t.fuse :AtDest, :Out
