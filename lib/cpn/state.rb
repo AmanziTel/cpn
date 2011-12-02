@@ -41,8 +41,9 @@ module CPN
     def as_json
       hash = {
         :name => name,
-        :marking => marking.map(&:inspect),
+        :marking => marking.map(&:inspect)
       }
+      hash[:description] = description unless description.nil?
       hash[:x] = x unless x.nil?
       hash[:y] = y unless y.nil?
       hash

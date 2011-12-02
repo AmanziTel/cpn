@@ -4,7 +4,8 @@ module CPN
   class Node
     include Observable
 
-    attr_accessor :name, :incoming, :outgoing
+    attr_accessor :name, :description
+    attr_accessor :incoming, :outgoing
     attr_accessor :x, :y
 
     def initialize(name)

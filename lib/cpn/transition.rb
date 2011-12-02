@@ -59,9 +59,10 @@ module CPN
     def as_json
       hash = {
         :name => name,
-        :enabled => enabled?,
-        :guard => guard
+        :enabled => enabled?
       }
+      hash[:guard] = guard unless guard.nil?
+      hash[:description] = description unless description.nil?
       hash[:x] = x unless x.nil?
       hash[:y] = y unless y.nil?
       hash

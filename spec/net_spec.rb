@@ -8,12 +8,11 @@ describe CPN::Net do
       @cpn = CPN::build :fig1 do
 
         state :Send do |s|
+          s.description = "Packets to send"
           s.initial = "[ 1, 'x' ], [ 2, 'y' ]"
         end
 
-        state :NextSend do |s|
-          s.initial = "1"
-        end
+        state :NextSend, "1"
 
         transition :SendPacket
 
@@ -21,9 +20,7 @@ describe CPN::Net do
           a.expr = "n, p"
         end
 
-        arc :NextSend, :SendPacket do |a|
-          a.expr = "n"
-        end
+        arc :NextSend, :SendPacket do |a| a.expr = "n" end
 
         state :A
 
@@ -31,6 +28,10 @@ describe CPN::Net do
           a.expr = "[ n, p ]"
         end
       end
+    end
+
+    it "can set the description of a state" do
+      @cpn.states[:Send].description.should == "Packets to send"
     end
 
     it "can enumerate the states" do
