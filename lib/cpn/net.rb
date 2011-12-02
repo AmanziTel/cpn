@@ -3,7 +3,7 @@ require File.expand_path("#{File.dirname __FILE__}/state")
 
 module CPN
   class Net
-    attr_reader :name, :states, :transitions, :arcs, :time
+    attr_reader :name, :states, :transitions, :arcs, :time, :pages
 
     def self.build(name, &block)
       cp = Net.new(name)
@@ -16,6 +16,7 @@ module CPN
       @states, @transitions = {}, {}
       @arcs = []
       @time = 0
+      @pages = []
     end
 
     def state(name, init = nil, &block)
@@ -46,6 +47,10 @@ module CPN
       from.outgoing << a
       to.incoming << a
       @arcs << a
+    end
+
+    def page(name, &block)
+
     end
 
     def each_transition

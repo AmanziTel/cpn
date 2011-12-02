@@ -508,7 +508,82 @@ describe CPN::Net do
     end
   end
 
+  context "Hierarchical net" do
+    before do
+      @cpn = CPN.build :TopLevel do
+        capacity = 5
+        state :Waiting, "{ :make => 'Honda' }"
+        state :OnRamp1
+        state :OnRamp1Count
+        state :Road1
+        state :Road1Count
+        state :AtDest
 
+        page :OnRamp do
+          state :In
+          state :Out
+          state :OutCount
+          transition :Move, "count < CAPACITY"
+          arc :In, :Move, "c"
+          arc :Move, :Out, "c"
+          arc :OutCount, :Move, "count"
+          arc :Move, :OutCount, "count + 1"
+        end
+
+        page :Road do
+          state :In
+          state :Out
+          state :InCount
+          state :OutCount
+          transition :Move, "outcount < CAPACITY"
+          arc :In, :Move, "c"
+          arc :InCount, :Move, "incount"
+          arc :Move, :InCount, "incount - 1"
+          arc :Move, :Out, "c"
+          arc :OutCount, :Move, "outcount"
+          arc :Move, :OutCount, "outcount + 1"
+        end
+
+        transition :StartRamp, :hs => :OnRamp do |t|
+          t.fuse :Waiting, :In
+          t.fuse :OnRamp1, :Out
+          t.fuse :OnRamp1Count, :OutCount
+        end
+
+        transition :Move1, :hs => :Road do |t|
+          t.fuse :OnRamp1, :In
+          t.fuse :OnRamp1Count, :InCount
+          t.fuse :Road1, :Out
+          t.fuse :Road1Count, :OutCount
+        end
+
+        transition :Move2, :hs => :Road do |t|
+          t.fuse :Road1, :In
+          t.fuse :Road1Count, :InCount
+          t.fuse :AtDest, :Out
+        end
+      end
+    end
+
+    describe "Waiting and StartRamp::In" do
+      it "should both contain the waiting car" do
+        @cpn.states[:Waiting].marking.should =~ [ { :make => "Honda" } ]
+        @cpn.states["StartRamp::In"].marking.should =~ [ { :make => "Honda" } ]
+      end
+    end
+
+    describe "StartRamp" do
+      before do
+        @t = @cpn.transitions[:StartRamp]
+      end
+
+      it "should be enabled" do
+        @t.should be_enabled
+      end
+
+    end
+
+  end
 
 end
 
