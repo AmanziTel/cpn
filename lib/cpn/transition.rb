@@ -35,18 +35,7 @@ module CPN
       notify_observers(self, :end, enabled?)
     end
 
-    def arc_token_combinations
-      ArcTokenBinding.all(@incoming)
-    end
-
-    def valid_arc_token_combinations
-      arc_token_combinations.reject do |arc_tokens|
-        context = ArcTokenBinding.as_context(arc_tokens)
-        context.empty? || !context.eval_guard(@guard)
-      end
-    end
-
-    def min_distance_to_valid_combo(at_time)
+   def min_distance_to_valid_combo(at_time)
       min = valid_arc_token_combinations.map do |arc_tokens|
         arc_tokens.map { |binding| (binding.token.ready? || 0) - at_time }.max
       end.min
@@ -66,6 +55,15 @@ module CPN
       hash[:x] = x unless x.nil?
       hash[:y] = y unless y.nil?
       hash
+    end
+
+    private
+
+    def valid_arc_token_combinations
+      ArcTokenBinding.all(@incoming).reject do |arc_tokens|
+        context = ArcTokenBinding.as_context(arc_tokens)
+        context.empty? || !context.eval_guard(@guard)
+      end
     end
 
   end
