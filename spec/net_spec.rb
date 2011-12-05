@@ -568,24 +568,54 @@ describe CPN::Net do
       end
     end
 
-    describe "Waiting and StartRamp::In" do
-      it "should both contain the waiting car" do
-        @cpn.states[:Waiting].marking.should =~ [ { :make => "Honda" } ]
-        @cpn.states["StartRamp::In"].marking.should =~ [ { :make => "Honda" } ]
+    def statemap(page)
+      ss = {}
+      page.states.each do |n, s|
+        ss[n] = s.marking
       end
+      ss
     end
 
-    describe "StartRamp" do
-      before do
-        @t = @cpn.transitions[:StartRamp]
+    context "with initial markings" do
+
+      describe "the superpage stateset" do
+        it "should be empty except for Waiting" do
+          statemap(@cpn).should == {
+            :Waiting => [ { :make => "Honda" } ],
+            :OnRamp1 => [], :OnRamp1Count => [],
+            :Road1 => [], :Road1Count => [],
+            :AtDest => []
+          }
+        end
       end
 
-      it "should be enabled" do
-        @t.should be_enabled
+      describe "the StartRamp subpage stateset" do
+        it "should be empty except for In" do
+          statemap(@cpn.transitions[:StartRamp]).should == {
+            :In => [ { :make => "Honda" } ],
+            :Out => [], :OutCount => []
+          }
+        end
       end
 
+      describe "the Move1 subpage stateset" do
+        it "should be empty" do
+          statemap(@cpn.transitions[:Move1]).should == {
+            :In => [], :InCount => [],
+            :Out => [], :OutCount => []
+          }
+        end
+      end
+
+      describe "the Move2 subpage stateset" do
+        it "should be empty" do
+          statemap(@cpn.transitions[:Move2]).should == {
+            :In => [], :InCount => [],
+            :Out => [], :OutCount => []
+          }
+        end
+      end
     end
-
   end
 
 end

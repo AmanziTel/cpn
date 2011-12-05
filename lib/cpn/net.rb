@@ -43,7 +43,12 @@ module CPN
       @page.add_transition(t)
     end
 
-    def hs_transition(name, subpage_name)
+    def hs_transition(name, subpage_name, &block)
+      prototype = @page.pages[subpage_name]
+      subpage = Page.new(name, @page)
+      subpage.instance_eval &block if block_given?
+      subpage.instanciate_from(prototype)
+      @page.add_transition(subpage)
     end
 
     def arc(from, to, expr = nil, &block)
@@ -73,7 +78,7 @@ module CPN
       @superpage = superpage
       @states, @transitions = {}, {}
       @arcs = []
-      @pages = []
+      @pages = {}
     end
 
     def add_state(state)
@@ -89,7 +94,7 @@ module CPN
     end
 
     def add_page(page)
-      @pages << page
+      @pages[page.name] = page
     end
 
     def each_transition
@@ -100,10 +105,35 @@ module CPN
       @states.values.each { |s| yield(s) }
     end
 
+    def node(name)
+      @states[name] || @transitions[name]
+    end
+
     def arc_between(from, to)
       arcs.detect do |a|
         a.from.name == from && a.to.name == to
       end
+    end
+
+    def fuse(superstate_name, substate_name)
+      @states[substate_name] = @superpage.states[superstate_name]
+    end
+
+    def instanciate_from(prototype)
+      prototype.each_state do |s|
+        add_state(s.clone) unless states[s.name]
+      end
+      prototype.each_transition do |t|
+        add_transition(t.clone)
+      end
+      prototype.arcs.each do |a|
+        from, to = a.from.name, a.to.name
+        arc = Arc.new(node(a.from.name), node(a.to.name))
+        arc.expr = a.expr
+        add_arc(arc)
+      end
+      # TODO: Add the pages of the prototype
+      self
     end
 
   end
@@ -117,7 +147,17 @@ module CPN
     end
 
     def occur_next
-      @transitions.values.select(&:enabled?).sample.occur(@time)
+      enabled = []
+      @transitions.values.each do |t|
+        if t.respond_to? :each_transition
+          t.each_transition do |hs|
+            enabled << hs if hs.enabled?
+          end
+        else
+          enabled << t if t.enabled?
+        end
+      end
+      enabled.sample.occur(@time)
     end
 
     def advance_time
