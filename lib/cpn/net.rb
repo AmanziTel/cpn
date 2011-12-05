@@ -101,6 +101,18 @@ module CPN
       @transitions.values.each { |t| yield(t) }
     end
 
+    def enabled_transitions
+      enabled = []
+      @transitions.values.each do |t|
+        if t.respond_to? :enabled_transitions
+          enabled += t.enabled_transitions
+        else
+          enabled << t if t.enabled?
+        end
+      end
+      enabled
+    end
+
     def each_state
       @states.values.each { |s| yield(s) }
     end
@@ -121,19 +133,32 @@ module CPN
 
     def instanciate_from(prototype)
       prototype.each_state do |s|
-        add_state(s.clone) unless states[s.name]
+        s = s.clone
+        s.incoming, s.outgoing = [], []
+        add_state(s) unless states[s.name]
       end
       prototype.each_transition do |t|
-        add_transition(t.clone)
+        t = t.clone
+        t.incoming, t.outgoing = [], []
+        add_transition(t)
       end
       prototype.arcs.each do |a|
-        from, to = a.from.name, a.to.name
-        arc = Arc.new(node(a.from.name), node(a.to.name))
+        from, to = node(a.from.name), node(a.to.name)
+        arc = Arc.new(from, to)
         arc.expr = a.expr
+        from.outgoing << arc
+        to.incoming << arc
         add_arc(arc)
       end
       # TODO: Add the pages of the prototype
       self
+    end
+
+    def to_s
+      "Page: #{@name} " +
+      "States #{@states.values.map(&:to_s).join(',')} " +
+      "Transitions: #{@transitions.values.map(&:to_s).join(',')} " +
+      "Arcs: #{@arcs.map(&:to_s).join(',')}"
     end
 
   end
@@ -147,27 +172,12 @@ module CPN
     end
 
     def occur_next
-      enabled = []
-      @transitions.values.each do |t|
-        if t.respond_to? :each_transition
-          t.each_transition do |hs|
-            enabled << hs if hs.enabled?
-          end
-        else
-          enabled << t if t.enabled?
-        end
-      end
-      enabled.sample.occur(@time)
+      enabled = enabled_transitions
+      enabled.sample.occur(@time) if enabled.length > 0
     end
 
     def advance_time
       @time += @transitions.values.map{ |t| t.min_distance_to_valid_combo(@time) }.min
-    end
-
-    def to_s
-      "States #{@states.values.map(&:to_s).join(',')} \
-       Transitions: #{@transitions.values.map(&:to_s).join(',')} \
-       Arcs: #{@arcs.map(&:to_s).join(',')}"
     end
 
     def as_json

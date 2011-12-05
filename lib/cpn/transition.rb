@@ -15,7 +15,7 @@ module CPN
 
     def occur(at_time = 0)
       atcs = valid_arc_token_combinations
-      return false if atcs.empty?
+      return nil if atcs.empty?
       arc_tokens = atcs.sample
 
       changed
@@ -33,6 +33,7 @@ module CPN
 
       changed
       notify_observers(self, :end, enabled?)
+      self
     end
 
    def min_distance_to_valid_combo(at_time)
