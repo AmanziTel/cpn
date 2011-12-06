@@ -17,7 +17,7 @@ module CPN
     end
 
     def to_s
-      "#{@from.to_s} --#{@expr.inspect}--> #{@to.to_s}"
+      "#{@from.to_s} --#{(@expr && @expr.inspect) || '*'}--> #{@to.to_s}"
     end
 
     def tokens

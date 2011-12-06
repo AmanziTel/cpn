@@ -11,7 +11,7 @@ module CPN
 
     def ready?(at_time)
       d = min_distance_to_valid_combo(at_time)
-      d.nil? || d <= 0
+      !d.nil? && d <= 0
     end
 
     def occur(at_time = 0)
@@ -24,7 +24,9 @@ module CPN
 
       context = ArcTokenBinding.as_context(arc_tokens)
       arc_tokens.each do |at|
-        at.arc.remove_token(at.token)
+        t = at.token
+        at.arc.remove_token(t)
+        t.ready_at(0) if t.respond_to? :ready_at
       end
 
       @outgoing.each do |arc|

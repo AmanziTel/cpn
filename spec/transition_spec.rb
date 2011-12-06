@@ -74,12 +74,12 @@ describe CPN::Transition do
 
   context "Timed net: 1 timed transition, used as a 3-second counter," do
 
-    #  (Time)1@[3] ---{n}--> [Clock]
+    #  (Time)[0]@[3] ---{t}--> [Clock]
     #       ^                  |
-    #       ---{n + 1@[+3]}<----
+    #       ------{t}@[+3]}<----
     before do
       @cpn = CPN.build :timed_ex1 do
-        state(:Time) { |s| s.initial = "[ 1 ].ready_at(3)" }
+        state(:Time) { |s| s.initial = "[ 0 ].ready_at(2)" }
         transition :Clock
         arc(:Time, :Clock) { |a| a.expr = "t, *" }
         arc(:Clock, :Time) { |a| a.expr = "[ t + 1 ].ready_at(+3)" }
@@ -99,20 +99,20 @@ describe CPN::Transition do
         @t.should_not be_ready(@cpn.time)
       end
 
-      it "should have a token on Time ready at 3" do
-        @cpn.states[:Time].marking.first.ready?.should == 3
+      it "should have a token on Time ready at 2" do
+        @cpn.states[:Time].marking.first.ready?.should == 2
       end
 
-      it "should have 3 time units until it's ready" do
-        @t.min_distance_to_valid_combo(0).should == 3
-        @t.min_distance_to_valid_combo(3).should == 0
+      it "should have 2 time units until it's ready" do
+        @t.min_distance_to_valid_combo(0).should == 2
+        @t.min_distance_to_valid_combo(2).should == 0
         @t.min_distance_to_valid_combo(100).should == 0
       end
 
       describe "when advancing the time" do
         before do
           @cpn.advance_time
-          @cpn.time.should == 3
+          @cpn.time.should == 2
         end
 
         it "should still be enabled" do
@@ -136,12 +136,83 @@ describe CPN::Transition do
             @t.should_not be_ready(@cpn.time)
           end
 
-          it "should have a token on Time ready at 6" do
-            @cpn.states[:Time].marking.first.ready?.should == 6
+          it "should have a token on Time ready at 5" do
+            @cpn.states[:Time].marking.first.ready?.should == 5
+          end
+
+          describe "and advancing time and occurring again" do
+            before do
+              @cpn.advance_time
+              @cpn.time.should == 5
+              @cpn.occur_next
+            end
+            it "should be enabled" do
+              @t.should be_enabled
+            end
+            it "should have a token on Time ready at 8" do
+              @cpn.states[:Time].marking.first.ready?.should == 8
+            end
           end
         end
       end
 
+    end
+  end
+
+  context "Timed net: 2 transitions, only one sets the time of tokens," do
+
+    #  (Time1)t@2 -----> [Clock1] ----> (Time2) --{t}--> [Clock2]
+    #       ^                                               |
+    #       ---------------------{t}@[+3]}<------------------
+    before do
+      @cpn = CPN.build :timed_ex2 do
+        state(:Time1) { |s| s.initial = "{ :id => 27 }.ready_at(2)" }
+        state(:Time2)
+        transition :Clock1
+        transition :Clock2
+        arc(:Time1, :Clock1)
+        arc(:Clock1, :Time2)
+        arc(:Time2, :Clock2) { |a| a.expr = "t" }
+        arc(:Clock2, :Time1) { |a| a.expr = "t.ready_at(+3)" }
+      end
+    end
+
+    describe "the Clock2 transition" do
+      before do
+        @t = @cpn.transitions[:Clock2]
+      end
+
+      it "should not be enabled" do
+        @t.should_not be_enabled
+      end
+
+      it "should not be ready" do
+        @t.should_not be_ready(@cpn.time)
+      end
+
+      it "should have nil time units until it's ready" do
+        @t.min_distance_to_valid_combo(0).should be_nil 
+      end
+
+      describe "when advancing the time and occurring" do
+        before do
+          @cpn.advance_time
+          @cpn.occur_next.should_not be_nil
+          @cpn.time.should == 2
+        end
+
+        it "should be enabled" do
+          @t.should be_enabled
+        end
+
+        it "should be ready" do
+          @t.should be_ready(@cpn.time)
+        end
+
+        it "should have 0 time units until it's ready" do
+          @t.min_distance_to_valid_combo(@cpn.time).should == 0
+        end
+      end
     end
   end
 
