@@ -74,7 +74,7 @@ describe CPN::Net do
       it "should be able to occur, placing a token in A" do
         @cpn.states[:A].marking.should be_empty
 
-        @cpn.transitions[:SendPacket].occur
+        @cpn.transitions[:SendPacket].occur.should_not be_nil
         @cpn.transitions[:SendPacket].should_not be_enabled
 
         @cpn.states[:NextSend].marking.should be_empty 
@@ -229,6 +229,7 @@ describe CPN::Net do
         qualities = []
         50.times do
           @cpn.transitions[:UpdateNetworkQuality].occur
+
           q = @cpn.states[:NetworkQuality].marking
           q.length.should == 1
           q.first.should be_between(0, 1)
@@ -441,71 +442,5 @@ describe CPN::Net do
 
   end
 
-  context "Timed net: 1 timed transition, used as a 3-second counter," do
-
-    #  (Time)1@[3] ---{n}--> [Clock]
-    #       ^                  |
-    #       ---{n + 1@[+3]}<----
-    before do
-      @cpn = CPN.build :timed_ex1 do
-        state(:Time) { |s| s.initial = "1.ready_at(3)" }
-        transition :Clock
-        arc(:Time, :Clock) { |a| a.expr = "n" }
-        arc(:Clock, :Time) { |a| a.expr = "(n + 1).ready_at(+3)" }
-      end
-    end
-
-    describe "the transition" do
-      before do
-        @t = @cpn.transitions[:Clock]
-      end
-
-      it "should be enabled" do
-        @t.should be_enabled
-      end
-
-      it "should not be ready" do
-        @t.should_not be_ready(@cpn.time)
-      end
-
-      it "should have a token on Time ready at 3" do
-        @cpn.states[:Time].marking.first.ready?.should == 3
-      end
-
-      describe "when advancing the time" do
-        before do
-          @cpn.advance_time
-          @cpn.time.should == 3
-        end
-
-        it "should still be enabled" do
-          @t.should be_enabled
-        end
-
-        it "should be ready" do
-          @t.should be_ready(@cpn.time)
-        end
-
-        describe "when firing" do
-          before do
-            @cpn.occur_next
-          end
-
-          it "should still be enabled" do
-            @t.should be_enabled
-          end
-
-          it "should not be ready" do
-            @t.should_not be_ready(@cpn.time)
-          end
-
-          it "should have a token on Time ready at 6" do
-            @cpn.states[:Time].marking.first.ready?.should == 6
-          end
-        end
-      end
-
-    end
-  end
 end
 

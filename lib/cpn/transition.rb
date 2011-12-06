@@ -2,7 +2,7 @@ require File.expand_path("#{File.dirname __FILE__}/node")
 require File.expand_path("#{File.dirname __FILE__}/evaluation_context")
 
 module CPN
-  class Transition < Node
+  class CPN::Transition < Node
     attr_accessor :guard
 
     def enabled?
@@ -10,11 +10,12 @@ module CPN
     end
 
     def ready?(at_time)
-      min_distance_to_valid_combo(at_time) == 0
+      d = min_distance_to_valid_combo(at_time)
+      d.nil? || d <= 0
     end
 
     def occur(at_time = 0)
-      atcs = valid_arc_token_combinations
+      atcs = ready_arc_token_combinations(at_time)
       return nil if atcs.empty?
       arc_tokens = atcs.sample
 
@@ -36,10 +37,11 @@ module CPN
       self
     end
 
-   def min_distance_to_valid_combo(at_time)
-      min = valid_arc_token_combinations.map do |arc_tokens|
-        arc_tokens.map { |binding| (binding.token.ready? || 0) - at_time }.max
-      end.min
+    def min_distance_to_valid_combo(at_time)
+      distances = valid_arc_token_combinations.map do |arc_tokens|
+        arc_tokens.map { |binding| binding.ready_distance(at_time) }.max
+      end
+      [ distances.min, 0].max if distances.length > 0
     end
 
     def to_s
@@ -67,6 +69,11 @@ module CPN
       end
     end
 
+    def ready_arc_token_combinations(at_time)
+      valid_arc_token_combinations.select do |arc_tokens|
+        arc_tokens.all? { |binding| binding.ready_distance(at_time) <= 0 }
+      end
+    end
   end
 
   class ArcTokenBinding
@@ -76,6 +83,11 @@ module CPN
       @token = token
       @arc = arc
       @binding = arc.token_binding(token)
+    end
+
+    def ready_distance(at_time)
+      return ((@token.ready? || at_time) - at_time) if @token.respond_to?(:ready?)
+      0
     end
 
     # Return all combinations of arc, token for each arc

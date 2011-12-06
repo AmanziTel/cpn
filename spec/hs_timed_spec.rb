@@ -1,11 +1,14 @@
 require 'spec_helper'
 
-describe "HS CPN::Net" do
+describe "HS timed CPN::Net" do
+  CAR1 = { :id => 1 }
+  CAR2 = { :id => 2 }
+  CAR3 = { :id => 3 }
 
-  context "Hierarchical untimed net" do
-    before do
+  context "Hierarchical timed net" do
+    before(:all) do
       @cpn = CPN.build :Top do
-        state :Waiting, "{ :make => 'Honda' }"
+        state :Waiting, "{ :id => 3 }.ready_at(6), { :id => 1 }.ready_at(1), { :id => 2 }.ready_at(2)"
         state :OnRamp1
         state :OnRamp1Count, "0"
         state :Road1
@@ -17,10 +20,10 @@ describe "HS CPN::Net" do
           state :Out
           state :OutCount, "0"
           transition :Move do |t| 
-            t.guard = "count < 5"
+            t.guard = "count < 1"
           end
           arc :In, :Move, "c"
-          arc :Move, :Out, "c"
+          arc :Move, :Out, "c.ready_at(+3)"
           arc :OutCount, :Move, "count"
           arc :Move, :OutCount, "count + 1"
         end
@@ -31,12 +34,12 @@ describe "HS CPN::Net" do
           state :InCount, "0"
           state :OutCount, "0"
           transition :Move do |t| 
-            t.guard = "outcount < 5"
+            t.guard = "outcount < 1"
           end
           arc :In, :Move, "c"
           arc :InCount, :Move, "incount"
           arc :Move, :InCount, "incount - 1"
-          arc :Move, :Out, "c"
+          arc :Move, :Out, "c.ready_at(+3)"
           arc :OutCount, :Move, "outcount"
           arc :Move, :OutCount, "outcount + 1"
         end
@@ -79,13 +82,13 @@ describe "HS CPN::Net" do
       describe "the stateset" do
         it "should be empty except for Top::Waiting and StartRamp::In" do
           statemap(@cpn).should == {
-            'Top::Waiting'        => [ { :make => "Honda" } ],
+            'Top::Waiting'        => [ CAR3, CAR1, CAR2 ],
             'Top::OnRamp1'        => [],
             'Top::OnRamp1Count'   => [ 0 ],
             'Top::Road1'          => [],
             'Top::Road1Count'     => [ 0 ],
             'Top::AtDest'         => [],
-            'StartRamp::In'       => [ { :make => "Honda" } ],
+            'StartRamp::In'       => [ CAR3, CAR1, CAR2 ],
             'StartRamp::Out'      => [],
             'StartRamp::OutCount' => [ 0 ],
             'Move1::In'           => [],
@@ -99,26 +102,40 @@ describe "HS CPN::Net" do
           }
         end
       end
+
+      describe "the time" do
+        it "should be 0" do
+          @cpn.time.should == 0
+        end
+      end
     end
 
-    context "after occurring once, " do
-      before do
+    context "after advancing the time and occurring once," do
+      before(:all) do
+        @cpn.occur_next.should be_nil
+        @cpn.advance_time
         @cpn.occur_next.should_not be_nil
       end
 
+      describe "the time" do
+        it "should be 1" do
+          @cpn.time.should == 1
+        end
+      end
+
       describe "the stateset" do
-        it "should have a car on Top::OnRamp1, StartRamp::Out and Move1::In" do
+        it "should have moved car 1 onto Top::OnRamp1, StartRamp::Out and Move1::In" do
           statemap(@cpn).should == {
-            'Top::Waiting'        => [],
-            'Top::OnRamp1'        => [ { :make => "Honda" } ],
+            'Top::Waiting'        => [ CAR3, CAR2 ],
+            'Top::OnRamp1'        => [ CAR1 ],
             'Top::OnRamp1Count'   => [ 1 ],
             'Top::Road1'          => [],
             'Top::Road1Count'     => [ 0 ],
             'Top::AtDest'         => [],
-            'StartRamp::In'       => [],
-            'StartRamp::Out'      => [ { :make => "Honda" } ],
+            'StartRamp::In'       => [ CAR3, CAR2 ],
+            'StartRamp::Out'      => [ CAR1 ],
             'StartRamp::OutCount' => [ 1 ],
-            'Move1::In'           => [ { :make => "Honda" } ],
+            'Move1::In'           => [ CAR1 ],
             'Move1::InCount'      => [ 1 ],
             'Move1::Out'          => [],
             'Move1::OutCount'     => [ 0 ],
@@ -131,27 +148,29 @@ describe "HS CPN::Net" do
       end
 
       context "twice, " do
-        before do
+        before(:all) do
+          @cpn.occur_next.should be_nil
+          @cpn.advance_time
           @cpn.occur_next.should_not be_nil
         end
 
         describe "the stateset" do
-          it "should have a car on Top::Road1, Move1::Out and Move2::In" do
+          it "should have car 1 on Top::Road1, Move1::Out and Move2::In" do
             statemap(@cpn).should == {
-              'Top::Waiting'        => [],
+              'Top::Waiting'        => [ CAR3, CAR2 ],
               'Top::OnRamp1'        => [],
               'Top::OnRamp1Count'   => [ 0 ],
-              'Top::Road1'          => [ { :make => "Honda" } ],
+              'Top::Road1'          => [ CAR1 ],
               'Top::Road1Count'     => [ 1 ],
               'Top::AtDest'         => [],
-              'StartRamp::In'       => [],
+              'StartRamp::In'       => [ CAR3, CAR2 ],
               'StartRamp::Out'      => [],
               'StartRamp::OutCount' => [ 0 ],
               'Move1::In'           => [],
               'Move1::InCount'      => [ 0 ],
-              'Move1::Out'          => [ { :make => "Honda" } ],
+              'Move1::Out'          => [ CAR1 ],
               'Move1::OutCount'     => [ 1 ],
-              'Move2::In'           => [ { :make => "Honda" } ],
+              'Move2::In'           => [ CAR1 ],
               'Move2::InCount'      => [ 1 ],
               'Move2::Out'          => [],
               'Move2::OutCount'     => [ 0 ]
@@ -159,40 +178,41 @@ describe "HS CPN::Net" do
           end
         end
 
-        context "thrice, " do
-          before do
+        describe "the time" do
+          it "should be 4" do
+            @cpn.time.should == 4
+          end
+        end
+
+        context "thrice (same time), " do
+          before(:all) do
             @cpn.occur_next.should_not be_nil
           end
 
           describe "the stateset" do
-            it "should have a car on Top::AtDest and Move2::Out" do
+            it "should move car 2 onto the ramp" do
               statemap(@cpn).should == {
-                'Top::Waiting'        => [],
-                'Top::OnRamp1'        => [],
-                'Top::OnRamp1Count'   => [ 0 ],
-                'Top::Road1'          => [],
-                'Top::Road1Count'     => [ 0 ],
-                'Top::AtDest'         => [ { :make => "Honda" } ],
-                'StartRamp::In'       => [],
-                'StartRamp::Out'      => [],
-                'StartRamp::OutCount' => [ 0 ],
-                'Move1::In'           => [],
-                'Move1::InCount'      => [ 0 ],
-                'Move1::Out'          => [],
-                'Move1::OutCount'     => [ 0 ],
-                'Move2::In'           => [],
-                'Move2::InCount'      => [ 0 ],
-                'Move2::Out'          => [ { :make => "Honda" } ],
-                'Move2::OutCount'     => [ 1 ]
+                'Top::Waiting'        => [ CAR3 ],
+                'Top::OnRamp1'        => [ CAR2 ],
+                'Top::OnRamp1Count'   => [ 1 ],
+                'Top::Road1'          => [ CAR1 ],
+                'Top::Road1Count'     => [ 1 ],
+                'Top::AtDest'         => [],
+                'StartRamp::In'       => [ CAR3 ],
+                'StartRamp::Out'      => [ CAR2 ],
+                'StartRamp::OutCount' => [ 1 ],
+                'Move1::In'           => [ CAR2 ],
+                'Move1::InCount'      => [ 1 ],
+                'Move1::Out'          => [ CAR1 ],
+                'Move1::OutCount'     => [ 1 ],
+                'Move2::In'           => [ CAR1 ],
+                'Move2::InCount'      => [ 1 ],
+                'Move2::Out'          => [],
+                'Move2::OutCount'     => [ 0 ]
               }
             end
           end
 
-          describe "the net" do
-            it "should no longer be able to occur" do
-              @cpn.occur_next.should be_nil
-            end
-          end
         end
       end
     end

@@ -22,14 +22,14 @@ Dir.glob "#{File.dirname __FILE__}/cpn/*.rb" do |f|
 end
 
 # Include HasTimedAvailability into a few classes often used as tokens
-class Fixnum
-  include CPN::TimedAvailability
-end
-
 class String
   include CPN::TimedAvailability
 end
 
 class Array
+  include CPN::TimedAvailability
+end
+
+class Hash
   include CPN::TimedAvailability
 end

@@ -70,11 +70,11 @@ module CPN
 
   end
 
-  class Page
-    attr_reader :name, :states, :transitions, :arcs, :pages, :superpage
+  class Page < Node
+    attr_reader :states, :transitions, :arcs, :pages, :superpage
 
     def initialize(name, superpage = nil)
-      @name = name
+      super(name)
       @superpage = superpage
       @states, @transitions = {}, {}
       @arcs = []
@@ -111,6 +111,12 @@ module CPN
         end
       end
       enabled
+    end
+
+    def ready_transitions(at_time)
+      enabled_transitions.select do |t|
+        t.ready?(at_time)
+      end
     end
 
     def each_state
@@ -154,6 +160,11 @@ module CPN
       self
     end
 
+    def min_distance_to_valid_combo(time_now)
+      ds = @transitions.values.map{ |t| t.min_distance_to_valid_combo(time_now) }
+      ds.compact.min
+    end
+
     def to_s
       "Page: #{@name} " +
       "States #{@states.values.map(&:to_s).join(',')} " +
@@ -172,18 +183,25 @@ module CPN
     end
 
     def occur_next
-      enabled = enabled_transitions
-      enabled.sample.occur(@time) if enabled.length > 0
+      ready = ready_transitions(@time)
+      ready.sample.occur(@time) if ready.length > 0
     end
 
     def advance_time
-      @time += @transitions.values.map{ |t| t.min_distance_to_valid_combo(@time) }.min
+      d = min_distance_to_valid_combo(@time)
+      @time += d unless d.nil?
     end
 
     def as_json
       {
         :states => @states.values.map { |s| s.as_json },
-        :transitions => @transitions.values.map { |t| t.as_json },
+        :transitions => @transitions.values.map do |t| 
+          if t.respond_to? :as_json
+            t.as_json
+          else
+            { :name => t.name, :hs => true }
+          end
+        end,
         :arcs => @arcs.map { |a| a.as_json }
       }
     end
