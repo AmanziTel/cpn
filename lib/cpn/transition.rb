@@ -71,10 +71,24 @@ module CPN
       end
     end
 
+    # Return the list of enabled arc token combinations for which the ready distance is
+    # the smallest.
     def ready_arc_token_combinations(at_time)
+      min_combos = []
+      min_value = nil 
+
       valid_arc_token_combinations.select do |arc_tokens|
-        arc_tokens.all? { |binding| binding.ready_distance(at_time) <= 0 }
+        readies = arc_tokens.map { |binding| binding.ready_distance(at_time) }
+        if readies.all? { |t| t <= 0 }
+          if min_value.nil? || readies.min < min_value
+            min_combos = [ arc_tokens ]
+            min_value = readies.min
+          elsif readies.min == min_value
+            min_combos << arc_tokens
+          end
+        end
       end
+      min_combos
     end
   end
 

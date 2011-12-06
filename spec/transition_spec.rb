@@ -216,5 +216,33 @@ describe CPN::Transition do
     end
   end
 
+  context "Timed net with multiple ready tokens" do
+    before do
+      @cpn = CPN.build :timed_ex3 do
+        state(:Source) { |s| s.initial = "{ :id => 3 }.ready_at(3), { :id => 4 }.ready_at(4), { :id => 1 }.ready_at(1)" }
+        state :Dest
+        transition :T
+        arc :Source, :T
+        arc :T, :Dest
+      end
+    end
+
+    describe "the T transition" do
+      before do
+        @t = @cpn.transitions[:T]
+      end
+
+      it "should be enabled and ready at 4" do
+        @t.should be_enabled
+        @t.should be_ready(4)
+      end
+
+      it "should occur with the lowest timed token first" do
+        @t.occur(4).should_not be_nil
+        @cpn.states[:Dest].marking.should == [ { :id => 1 } ]
+      end
+    end
+  end
+
 end
 
