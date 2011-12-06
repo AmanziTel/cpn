@@ -77,7 +77,7 @@ module CPN
       min_combos = []
       min_value = nil 
 
-      valid_arc_token_combinations.select do |arc_tokens|
+      valid_arc_token_combinations.each do |arc_tokens|
         readies = arc_tokens.map { |binding| binding.ready_distance(at_time) }
         if readies.all? { |t| t <= 0 }
           if min_value.nil? || readies.min < min_value
