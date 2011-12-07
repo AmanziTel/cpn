@@ -71,7 +71,7 @@ module CPN
   end
 
   class Page < Node
-    attr_reader :states, :transitions, :arcs, :pages, :superpage
+    attr_reader :states, :transitions, :arcs, :pages, :superpage, :fuse_arcs
 
     def initialize(name, superpage = nil)
       super(name)
@@ -79,6 +79,7 @@ module CPN
       @states, @transitions = {}, {}
       @arcs = []
       @pages = {}
+      @fuse_arcs = []
     end
 
     def add_state(state)
@@ -92,6 +93,13 @@ module CPN
     def add_arc(arc)
       @arcs << arc
     end
+
+    def add_fuse_arc(state, hs_transition)
+      @fuse_arcs << {
+        :state => state,
+        :hs_transition => hs_transition
+      }
+     end
 
     def add_page(page)
       @pages[page.name] = page
@@ -135,6 +143,7 @@ module CPN
 
     def fuse(superstate_name, substate_name)
       @states[substate_name] = @superpage.states[superstate_name]
+      @superpage.add_fuse_arc(@states[substate_name], self)
     end
 
     def instanciate_from(prototype)
@@ -190,20 +199,6 @@ module CPN
     def advance_time
       d = min_distance_to_valid_combo(@time)
       @time += d unless d.nil?
-    end
-
-    def as_json
-      {
-        :states => @states.values.map { |s| s.as_json },
-        :transitions => @transitions.values.map do |t| 
-          if t.respond_to? :as_json
-            t.as_json
-          else
-            { :name => t.name, :hs => true }
-          end
-        end,
-        :arcs => @arcs.map { |a| a.as_json }
-      }
     end
 
     def dump

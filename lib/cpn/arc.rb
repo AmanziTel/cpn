@@ -33,13 +33,6 @@ module CPN
       @to.add_token(token)
     end
 
-    def as_json
-      {
-        :from => from.name,
-        :to => to.name,
-        :expr => expr
-      }
-    end
   end
 
 end

@@ -38,21 +38,6 @@ module CPN
       s
     end
 
-    def as_json
-      hash = {
-        :name => name,
-        :marking => marking.map do |t|
-          s = t.inspect
-          s << "@" + t.ready?.to_s if t.respond_to?(:ready?) && !(t.ready?.nil?)
-          s
-        end
-      }
-      hash[:description] = description unless description.nil?
-      hash[:x] = x unless x.nil?
-      hash[:y] = y unless y.nil?
-      hash
-    end
-
     def reset
       @marking = eval("[ #{@initial} ]")
     end

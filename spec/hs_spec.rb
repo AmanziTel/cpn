@@ -76,6 +76,12 @@ describe "HS CPN::Net" do
     end
 
     context "with initial markings" do
+      describe "fuse arcs" do
+        it "should have ten" do
+          @cpn.fuse_arcs.length.should == 10
+        end
+      end
+
       describe "the stateset" do
         it "should be empty except for Top::Waiting and StartRamp::In" do
           statemap(@cpn).should == {
