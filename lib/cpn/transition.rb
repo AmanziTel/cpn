@@ -53,7 +53,7 @@ module CPN
    private
 
     def valid_arc_token_combinations
-      ArcTokenBinding.all(@incoming).reject do |arc_tokens|
+      ArcTokenBinding.product(@incoming).reject do |arc_tokens|
         context = ArcTokenBinding.as_context(arc_tokens)
         context.empty? || !context.eval_guard(@guard)
       end
@@ -94,6 +94,10 @@ module CPN
       0
     end
 
+    def self.all_for_arc(arc)
+      arc.tokens.map{ |t| ArcTokenBinding.new(arc, t) }
+    end
+
     # Return all combinations of arc, token for each arc
     # So, for arcs A1[t1, t2], A2[t3, t4], A3[t5, t6]
     # will produce
@@ -101,17 +105,17 @@ module CPN
     #   [ [A1 t1], [A2 t3], [A3 t6] ]
     #   [ [A1 t1], [A2 t4], [A3 t5] ]
     # etc. (all combinations)
-    def self.all(arcs)
+    def self.product(arcs)
       return [] if arcs.length == 0
-      first_ats = arcs.first.tokens.map { |t| ArcTokenBinding.new(arcs.first, t) }
+      first_ats = all_for_arc(arcs.first)
       return [] if first_ats.length == 0
       return first_ats.map{|at| [ at ] }  if arcs.length == 1
 
-      rest_cs = all(arcs[1..-1])
+      rest_cs = product(arcs[1..-1])
 
       result = []
-      first_ats.each do |first_at| 
-        rest_cs.map do |cs| 
+      first_ats.each do |first_at|
+        rest_cs.map do |cs|
           result << [ first_at ] + cs
         end
       end

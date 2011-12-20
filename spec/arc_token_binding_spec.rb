@@ -34,12 +34,12 @@ describe CPN::ArcTokenBinding do
       end
 
       it "should have none for an empty list of arcs" do
-        atcs = CPN::ArcTokenBinding.all([])
+        atcs = CPN::ArcTokenBinding.product([])
         atcs.should be_empty
       end
 
       it "should have 1 given one incoming arc with one token" do
-        atcs = CPN::ArcTokenBinding.all([ @cpn.arc_between(:A, :T) ])
+        atcs = CPN::ArcTokenBinding.product([ @cpn.arc_between(:A, :T) ])
         atcs.length.should == 1
         atcs.first.first.token.should == 'a'
         atcs.first.first.arc.should == @cpn.arc_between(:A, :T)
@@ -47,7 +47,7 @@ describe CPN::ArcTokenBinding do
       end
 
       it "should have 2 given one incoming arc with two tokens" do
-        atcs = CPN::ArcTokenBinding.all([ @cpn.arc_between(:B, :T) ])
+        atcs = CPN::ArcTokenBinding.product([ @cpn.arc_between(:B, :T) ])
         atcs.length.should == 2
         atcs.first.length.should == 1
         atcs.first.first.token.should == 'a'
@@ -60,7 +60,7 @@ describe CPN::ArcTokenBinding do
       end
 
       it "should have 2 given two incoming arcs with 1 and 2 tokens" do
-        atcs = CPN::ArcTokenBinding.all(@t.incoming)
+        atcs = CPN::ArcTokenBinding.product(@t.incoming)
         atcs.length.should == 2
         atcs.first.length.should == 2
         atcs.first.first.token.should == 'a'
