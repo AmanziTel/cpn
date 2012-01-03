@@ -6,11 +6,12 @@ module CPN
 
     attr_accessor :name, :description
     attr_accessor :incoming, :outgoing
-    attr_accessor :x, :y
+    attr_accessor :properties
 
     def initialize(name)
       @name = name
       @incoming, @outgoing = [], []
+      @properties = {}
     end
 
   end
