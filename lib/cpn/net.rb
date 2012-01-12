@@ -71,7 +71,7 @@ module CPN
   end
 
   class Page < Node
-    attr_reader :states, :transitions, :arcs, :pages, :superpage, :fuse_arcs
+    attr_reader :states, :transitions, :arcs, :pages, :superpage, :fuse_arcs, :prototype
 
     def initialize(name, superpage = nil)
       super(name)
@@ -147,6 +147,7 @@ module CPN
     end
 
     def instanciate_from(prototype)
+      @prototype = prototype
       prototype.each_state do |s|
         s = s.clone
         s.incoming, s.outgoing = [], []
