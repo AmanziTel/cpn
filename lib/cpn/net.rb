@@ -1,73 +1,15 @@
 require File.expand_path("#{File.dirname __FILE__}/transition")
 require File.expand_path("#{File.dirname __FILE__}/state")
+require File.expand_path("#{File.dirname __FILE__}/dsl_builder")
+require File.expand_path("#{File.dirname __FILE__}/json_builder")
 
 module CPN
   def self.build(name, &block)
-    Builder.build_net(name, &block)
+    DSLBuilder.build_net(name, &block)
   end
 
-  class Builder
-
-    def initialize(page)
-      @page = page
-    end
-
-    def self.build_net(name, &block)
-      builder = Builder.new(Net.new(name))
-      builder.instance_eval &block
-      builder.result
-    end
-
-    def result
-      @page
-    end
-
-    def page(name, &block)
-      p = Page.new(name, @page)
-      builder = Builder.new(p)
-      builder.instance_eval &block
-
-      @page.add_page(p)
-    end
-
-    def state(name, init = nil, &block)
-      state = State.new name
-      state.initial = init unless init.nil?
-      state.instance_eval &block if block_given?
-      @page.add_state(state)
-    end
-
-    def transition(name, &block)
-      t = Transition.new name
-      t.instance_eval &block if block_given?
-      @page.add_transition(t)
-    end
-
-    def hs_transition(name, subpage_name, &block)
-      prototype = @page.pages[subpage_name]
-      subpage = Page.new(name, @page)
-      subpage.instance_eval &block if block_given?
-      subpage.instanciate_from(prototype)
-      @page.add_transition(subpage)
-    end
-
-    def arc(from, to, expr = nil, &block)
-      if @page.states.has_key?(from) && @page.transitions.has_key?(to)
-        from, to = @page.states[from], @page.transitions[to]
-      elsif @page.transitions.has_key?(from) && @page.states.has_key?(to)
-        from, to = @page.transitions[from], @page.states[to]
-      else
-        raise "State or transition not found: #{from} --> #{to}"
-        return
-      end
-      a = Arc.new(from, to)
-      a.expr = expr unless expr.nil?
-      a.instance_eval &block if block_given?
-      from.outgoing << a
-      to.incoming << a
-      @page.add_arc(a)
-    end
-
+  def self.build_json(name, json)
+    JSONBuilder.build_net(name, json)
   end
 
   class Page < Node
