@@ -239,7 +239,7 @@ describe CPN::Transition do
 
       it "should occur with the lowest timed token first" do
         @t.occur(4).should_not be_nil
-        @cpn.states[:Dest].marking.should == [ { :id => 1 } ]
+        @cpn.states[:Dest].marking.to_a.should == [ { :id => 1 } ]
       end
     end
   end

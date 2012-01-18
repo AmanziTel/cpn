@@ -30,7 +30,7 @@ describe CPN::JSONBuilder do
     end
 
     it "can get the marking of a state" do
-      @cpn.states["Send"].marking.should =~ [ [ 1, "x" ], [ 2, "y" ] ]
+      @cpn.states["Send"].marking.to_a.should =~ [ [ 1, "x" ], [ 2, "y" ] ]
     end
 
     it "can get the guard of a transition" do
@@ -58,7 +58,7 @@ describe CPN::JSONBuilder do
 
     describe "the transition SendPacket" do
       it "should be enabled" do
-        @cpn.states["NextSend"].marking.should == [ 1 ]
+        @cpn.states["NextSend"].marking.to_a.should == [ 1 ]
         @cpn.transitions["SendPacket"].should be_enabled
       end
     end

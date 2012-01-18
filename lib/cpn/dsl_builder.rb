@@ -1,9 +1,11 @@
 require File.expand_path("#{File.dirname __FILE__}/transition")
 require File.expand_path("#{File.dirname __FILE__}/state")
+require File.expand_path("#{File.dirname __FILE__}/marking")
 
 module CPN
 
   class DSLBuilder
+    attr_accessor :resolver
 
     def initialize(page)
       @page = page
@@ -40,11 +42,9 @@ module CPN
       @page.add_transition(t)
     end
 
-    def hs_transition(name, subpage_name, &block)
-      prototype = @page.pages[subpage_name]
+    def hs_transition(name, &block)
       subpage = Page.new(name, @page)
       subpage.instance_eval &block if block_given?
-      subpage.instanciate_from(prototype)
       @page.add_transition(subpage)
     end
 

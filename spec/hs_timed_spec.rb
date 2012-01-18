@@ -44,20 +44,23 @@ describe "HS timed CPN::Net" do
           arc :Move, :OutCount, "outcount + 1"
         end
 
-        hs_transition :StartRamp, :OnRamp do |t|
+        hs_transition :StartRamp do |t|
+          t.prototype = :OnRamp
           t.fuse :Waiting, :In
           t.fuse :OnRamp1, :Out
           t.fuse :OnRamp1Count, :OutCount
         end
 
-        hs_transition :Move1, :Road do |t|
+        hs_transition :Move1 do |t|
+          t.prototype = :Road
           t.fuse :OnRamp1, :In
           t.fuse :OnRamp1Count, :InCount
           t.fuse :Road1, :Out
           t.fuse :Road1Count, :OutCount
         end
 
-        hs_transition :Move2, :Road do |t|
+        hs_transition :Move2 do |t|
+          t.prototype = :Road
           t.fuse :Road1, :In
           t.fuse :Road1Count, :InCount
           t.fuse :AtDest, :Out
@@ -68,7 +71,7 @@ describe "HS timed CPN::Net" do
     def statemap(page)
       ss = {}
       page.states.each do |n, s|
-        ss["#{page.name}::#{n.to_s}"] = s.marking
+        ss["#{page.name}::#{n.to_s}"] = s.marking.to_a
       end
       page.transitions.each do |n, t|
         if t.respond_to? :states
@@ -92,12 +95,12 @@ describe "HS timed CPN::Net" do
             'StartRamp::Out'      => [],
             'StartRamp::OutCount' => [ 0 ],
             'Move1::In'           => [],
-            'Move1::InCount'      => [ 0 ],
             'Move1::Out'          => [],
+            'Move1::InCount'      => [ 0 ],
             'Move1::OutCount'     => [ 0 ],
             'Move2::In'           => [],
-            'Move2::InCount'      => [ 0 ],
             'Move2::Out'          => [],
+            'Move2::InCount'      => [ 0 ],
             'Move2::OutCount'     => [ 0 ]
           }
         end
@@ -136,12 +139,12 @@ describe "HS timed CPN::Net" do
             'StartRamp::Out'      => [ CAR1 ],
             'StartRamp::OutCount' => [ 1 ],
             'Move1::In'           => [ CAR1 ],
-            'Move1::InCount'      => [ 1 ],
             'Move1::Out'          => [],
+            'Move1::InCount'      => [ 1 ],
             'Move1::OutCount'     => [ 0 ],
             'Move2::In'           => [],
-            'Move2::InCount'      => [ 0 ],
             'Move2::Out'          => [],
+            'Move2::InCount'      => [ 0 ],
             'Move2::OutCount'     => [ 0 ]
           }
         end
@@ -167,12 +170,12 @@ describe "HS timed CPN::Net" do
               'StartRamp::Out'      => [],
               'StartRamp::OutCount' => [ 0 ],
               'Move1::In'           => [],
-              'Move1::InCount'      => [ 0 ],
               'Move1::Out'          => [ CAR1 ],
+              'Move1::InCount'      => [ 0 ],
               'Move1::OutCount'     => [ 1 ],
               'Move2::In'           => [ CAR1 ],
-              'Move2::InCount'      => [ 1 ],
               'Move2::Out'          => [],
+              'Move2::InCount'      => [ 1 ],
               'Move2::OutCount'     => [ 0 ]
             }
           end
@@ -202,12 +205,12 @@ describe "HS timed CPN::Net" do
                 'StartRamp::Out'      => [ CAR2 ],
                 'StartRamp::OutCount' => [ 1 ],
                 'Move1::In'           => [ CAR2 ],
-                'Move1::InCount'      => [ 1 ],
                 'Move1::Out'          => [ CAR1 ],
+                'Move1::InCount'      => [ 1 ],
                 'Move1::OutCount'     => [ 1 ],
                 'Move2::In'           => [ CAR1 ],
-                'Move2::InCount'      => [ 1 ],
                 'Move2::Out'          => [],
+                'Move2::InCount'      => [ 1 ],
                 'Move2::OutCount'     => [ 0 ]
               }
             end

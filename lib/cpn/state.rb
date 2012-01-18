@@ -1,10 +1,13 @@
+require File.expand_path("#{File.dirname __FILE__}/state")
+
 module CPN
   class State < Node
     attr_accessor :marking
 
     def initialize(name)
       super
-      @marking = []
+      @marking = CPN::Marking.new
+      @marking.add_observer(self, :updated)
     end
 
     def initial=(init_expr)
@@ -17,19 +20,16 @@ module CPN
     end
 
     def remove_token(token)
-      i = @marking.index(token)
-      raise "Unknown token #{token}" if i.nil?
-      @marking.delete_at(i)
-
-      changed
-      notify_observers(self, :token_removed, @marking)
+      @marking.delete(token)
     end
 
     def add_token(token)
       @marking << token
+    end
 
+    def updated(source, op, marking)
       changed
-      notify_observers(self, :token_added, @marking)
+      notify_observers(self, op, marking.to_a)
     end
 
     def to_s
@@ -39,8 +39,13 @@ module CPN
     end
 
     def reset
-      @marking = eval("[ #{@initial} ]")
+      @marking.set(eval("[ #{@initial} ]"))
     end
 
+    def fuse_with(source_state)
+      @marking.delete_observer(self)
+      @marking = source_state.marking
+      @marking.add_observer(self, :updated)
+    end
   end
 end

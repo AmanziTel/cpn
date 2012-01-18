@@ -84,23 +84,32 @@ module CPN
     end
 
     def fuse(superstate_name, substate_name)
-      @states[substate_name] = @superpage.states[superstate_name]
-      @superpage.add_fuse_arc(@states[substate_name], self)
+      superstate = @superpage.states[superstate_name]
+      raise "Superstate '#{superstate_name}' not found" unless superstate
+      @states[substate_name].fuse_with(superstate)
+      @superpage.add_fuse_arc(superstate, self)
     end
 
-    def instanciate_from(prototype)
-      @prototype = prototype
-      prototype.each_state do |s|
+    def prototype=(prototype)
+      raise "No prototype given" unless prototype
+      if prototype.kind_of? Hash
+        raise "No resolver given" unless @resolver
+        @prototype = @resolver.resolve(prototype)
+      else
+        @prototype = superpage.pages[prototype]
+      end
+      raise "Unable to resolve prototype" unless @prototype
+      @prototype.each_state do |s|
         s = s.clone
         s.incoming, s.outgoing = [], []
         add_state(s) unless states[s.name]
       end
-      prototype.each_transition do |t|
+      @prototype.each_transition do |t|
         t = t.clone
         t.incoming, t.outgoing = [], []
         add_transition(t)
       end
-      prototype.arcs.each do |a|
+      @prototype.arcs.each do |a|
         from, to = node(a.from.name), node(a.to.name)
         arc = Arc.new(from, to)
         arc.expr = a.expr

@@ -76,19 +76,19 @@ describe CPN::Net do
 
     describe "the transition SendPacket" do
       it "should be enabled" do
-        @cpn.states[:NextSend].marking.should == [ 1 ]
+        @cpn.states[:NextSend].marking.to_a.should == [ 1 ]
         @cpn.transitions[:SendPacket].should be_enabled
       end
 
       it "should be able to occur, placing a token in A" do
-        @cpn.states[:A].marking.should be_empty
+        @cpn.states[:A].marking.to_a.should be_empty
 
         @cpn.transitions[:SendPacket].occur.should_not be_nil
         @cpn.transitions[:SendPacket].should_not be_enabled
 
-        @cpn.states[:NextSend].marking.should be_empty 
-        @cpn.states[:Send].marking.should == [ [ 2, "y" ] ] 
-        @cpn.states[:A].marking.should == [ [ 1, "x" ] ]
+        @cpn.states[:NextSend].marking.to_a.should be_empty 
+        @cpn.states[:Send].marking.to_a.should == [ [ 2, "y" ] ] 
+        @cpn.states[:A].marking.to_a.should == [ [ 1, "x" ] ]
       end
 
       describe "with a marking of '3' on NextSend" do
@@ -138,10 +138,10 @@ describe CPN::Net do
       it "should be able to occur, placing a 42 token in C and D" do
         @cpn.transitions[:T].occur
         @cpn.transitions[:T].should_not be_enabled
-        @cpn.states[:A].marking.should be_empty
-        @cpn.states[:B].marking.should be_empty
-        @cpn.states[:C].marking.should == [ 42 ]
-        @cpn.states[:D].marking.should == [ 42 ]
+        @cpn.states[:A].marking.to_a.should be_empty
+        @cpn.states[:B].marking.to_a.should be_empty
+        @cpn.states[:C].marking.to_a.should == [ 42 ]
+        @cpn.states[:D].marking.to_a.should == [ 42 ]
       end
     end
 
@@ -240,7 +240,7 @@ describe CPN::Net do
           @cpn.transitions[:UpdateNetworkQuality].occur
 
           q = @cpn.states[:NetworkQuality].marking
-          q.length.should == 1
+          q.count.should == 1
           q.first.should be_between(0, 1)
           qualities << q.first
         end
@@ -266,11 +266,11 @@ describe CPN::Net do
         it "should be able to occur twice, placing a [ 1, 'Modellin' ] token in A" do
           @cpn.transitions[:SendPacket].occur
           @cpn.transitions[:SendPacket].should be_enabled
-          @cpn.states[:A].marking.should == [ [ 1, 'Modellin' ] ]
+          @cpn.states[:A].marking.to_a.should == [ [ 1, 'Modellin' ] ]
 
           @cpn.transitions[:SendPacket].occur
           @cpn.transitions[:SendPacket].should be_enabled
-          @cpn.states[:A].marking.should == [ [ 1, 'Modellin' ], [ 1, 'Modellin' ] ]
+          @cpn.states[:A].marking.to_a.should == [ [ 1, 'Modellin' ], [ 1, 'Modellin' ] ]
         end
       end
     end
@@ -278,8 +278,8 @@ describe CPN::Net do
     context "after SendPacket" do
       before do
         @cpn.transitions[:SendPacket].occur
-        @cpn.states[:A].marking.should == [ [ 1, 'Modellin' ] ]
-        @cpn.states[:B].marking.should be_empty
+        @cpn.states[:A].marking.to_a.should == [ [ 1, 'Modellin' ] ]
+        @cpn.states[:B].marking.to_a.should be_empty
       end
 
       [ :ReceivePacket, :TransmitAck, :ReceiveAck ].each do |t|
@@ -296,19 +296,19 @@ describe CPN::Net do
         end
 
         it "can occur, placing a token on B if NetworkQuality is 1" do
-          @cpn.states[:NetworkQuality].marking.should == [ 1 ]
+          @cpn.states[:NetworkQuality].marking.to_a.should == [ 1 ]
           @cpn.transitions[:TransmitPacket].occur
-          @cpn.states[:A].marking.should be_empty
-          @cpn.states[:B].marking.should == [ [ 1, 'Modellin' ] ]
-          @cpn.states[:NetworkQuality].marking.should == [ 1 ]
+          @cpn.states[:A].marking.to_a.should be_empty
+          @cpn.states[:B].marking.to_a.should == [ [ 1, 'Modellin' ] ]
+          @cpn.states[:NetworkQuality].marking.to_a.should == [ 1 ]
         end
 
         it "can occur, placing nothing on B if NetworkQuality is 0" do
           @cpn.states[:NetworkQuality].marking = [ 0 ]
           @cpn.transitions[:TransmitPacket].occur
-          @cpn.states[:A].marking.should be_empty
-          @cpn.states[:B].marking.should be_empty
-          @cpn.states[:NetworkQuality].marking.should == [ 0 ]
+          @cpn.states[:A].marking.to_a.should be_empty
+          @cpn.states[:B].marking.to_a.should be_empty
+          @cpn.states[:NetworkQuality].marking.to_a.should == [ 0 ]
         end
       end
 
@@ -331,17 +331,17 @@ describe CPN::Net do
           end
 
           it "can occur, placing @n+1 on C, appending @p to Received and increasing NextRec" do
-            @cpn.states[:B].marking.should == [ [ 1, 'Modellin' ] ]
-            @cpn.states[:C].marking.should be_empty
-            @cpn.states[:Received].marking.should == [ "" ]
-            @cpn.states[:NextRec].marking.should == [ 1 ]
+            @cpn.states[:B].marking.to_a.should == [ [ 1, 'Modellin' ] ]
+            @cpn.states[:C].marking.to_a.should be_empty
+            @cpn.states[:Received].marking.to_a.should == [ "" ]
+            @cpn.states[:NextRec].marking.to_a.should == [ 1 ]
 
             @cpn.transitions[:ReceivePacket].occur
 
-            @cpn.states[:B].marking.should be_empty
-            @cpn.states[:C].marking.should == [ 2 ]
-            @cpn.states[:Received].marking.should == [ "Modellin" ]
-            @cpn.states[:NextRec].marking.should == [ 2 ]
+            @cpn.states[:B].marking.to_a.should be_empty
+            @cpn.states[:C].marking.to_a.should == [ 2 ]
+            @cpn.states[:Received].marking.to_a.should == [ "Modellin" ]
+            @cpn.states[:NextRec].marking.to_a.should == [ 2 ]
           end
         end
 
@@ -364,26 +364,26 @@ describe CPN::Net do
             end
 
             it "can occur, placing @n on D, if the NetworkQuality is 1" do
-              @cpn.states[:NetworkQuality].marking.should == [ 1 ]
-              @cpn.states[:C].marking.should == [ 2 ]
-              @cpn.states[:D].marking.should be_empty
+              @cpn.states[:NetworkQuality].marking.to_a.should == [ 1 ]
+              @cpn.states[:C].marking.to_a.should == [ 2 ]
+              @cpn.states[:D].marking.to_a.should be_empty
 
               @cpn.transitions[:TransmitAck].occur
 
-              @cpn.states[:C].marking.should be_empty
-              @cpn.states[:D].marking.should == [ 2 ]
+              @cpn.states[:C].marking.to_a.should be_empty
+              @cpn.states[:D].marking.to_a.should == [ 2 ]
             end
 
             it "can occur, placing nothing on D, if the NetworkQuality is 0" do
               @cpn.states[:NetworkQuality].marking = [ 0 ]
-              @cpn.states[:C].marking.should == [ 2 ]
-              @cpn.states[:D].marking.should be_empty
+              @cpn.states[:C].marking.to_a.should == [ 2 ]
+              @cpn.states[:D].marking.to_a.should be_empty
 
               @cpn.transitions[:TransmitAck].occur
 
               @cpn.states[:NetworkQuality].marking = [ 0 ]
-              @cpn.states[:C].marking.should be_empty
-              @cpn.states[:D].marking.should be_empty
+              @cpn.states[:C].marking.to_a.should be_empty
+              @cpn.states[:D].marking.to_a.should be_empty
             end
           end
 
@@ -406,13 +406,13 @@ describe CPN::Net do
               end
 
               it "can occur, placing @n on NextSend instead of its old value" do
-                @cpn.states[:D].marking.should == [ 2 ]
-                @cpn.states[:NextSend].marking.should == [ 1 ]
+                @cpn.states[:D].marking.to_a.should == [ 2 ]
+                @cpn.states[:NextSend].marking.to_a.should == [ 1 ]
 
                 @cpn.transitions[:ReceiveAck].occur
 
-                @cpn.states[:D].marking.should be_empty
-                @cpn.states[:NextSend].marking.should == [ 2 ]
+                @cpn.states[:D].marking.to_a.should be_empty
+                @cpn.states[:NextSend].marking.to_a.should == [ 2 ]
               end
             end
 
@@ -442,10 +442,10 @@ describe CPN::Net do
 #      end
 #
 #      it "should have sent, received and acknowledged all messages" do
-#        @cpn.states[:Received].marking.should == [
+#        @cpn.states[:Received].marking.to_a.should == [
 #          "Modelling and Analysis by Means of Coloured Petri Nets##"
 #        ]
-#        @cpn.states[:NextSend].marking.should == [ 8 ]
+#        @cpn.states[:NextSend].marking.to_a.should == [ 8 ]
 #      end
 #    end
 
