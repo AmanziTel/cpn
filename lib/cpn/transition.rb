@@ -9,18 +9,20 @@ module CPN
       valid_arc_token_combinations.length > 0
     end
 
-    def ready?(at_time)
-      d = min_distance_to_valid_combo(at_time)
+    def ready?
+      d = min_distance_to_valid_combo
       !d.nil? && d <= 0
     end
 
-    def occur(at_time = 0)
-      atcs = ready_arc_token_combinations(at_time)
+    def occur
+      at_time = @container.net.time
+      atcs = ready_arc_token_combinations
       return nil if atcs.empty?
       arc_tokens = atcs.sample
 
       changed
-      notify_observers(self, :start, true)
+      notify_observers(self, :before_fire)
+      @container.fire_transition_fired(self, :before_fire)
 
       context = ArcTokenBinding.as_context(arc_tokens)
       arc_tokens.each do |at|
@@ -35,11 +37,13 @@ module CPN
       end
 
       changed
-      notify_observers(self, :end, enabled?)
+      notify_observers(self, :after_fire)
+      @container.fire_transition_fired(self, :after_fire)
       self
     end
 
-    def min_distance_to_valid_combo(at_time)
+    def min_distance_to_valid_combo
+      at_time = @container.net.time
       distances = valid_arc_token_combinations.map do |arc_tokens|
         arc_tokens.map { |binding| binding.ready_distance(at_time) }.max
       end
@@ -61,7 +65,8 @@ module CPN
 
     # Return the list of enabled arc token combinations for which the ready distance is
     # the smallest.
-    def ready_arc_token_combinations(at_time)
+    def ready_arc_token_combinations
+      at_time = @container.net.time
       min_combos = []
       min_value = nil 
 

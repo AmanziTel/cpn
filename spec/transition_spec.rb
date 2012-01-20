@@ -39,7 +39,7 @@ describe CPN::Transition do
       end
 
       it "should have 0 distance to being valid" do
-        @t.min_distance_to_valid_combo(0).should == 0
+        @t.min_distance_to_valid_combo.should == 0
       end
 
       describe "after firing" do
@@ -63,7 +63,7 @@ describe CPN::Transition do
           end
 
           it "should have nil (infinite) distance to being valid" do
-            @t.min_distance_to_valid_combo(0).should be_nil
+            @t.min_distance_to_valid_combo.should be_nil
           end
 
         end
@@ -96,7 +96,7 @@ describe CPN::Transition do
       end
 
       it "should not be ready" do
-        @t.should_not be_ready(@cpn.time)
+        @t.should_not be_ready
       end
 
       it "should have a token on Time ready at 2" do
@@ -104,9 +104,7 @@ describe CPN::Transition do
       end
 
       it "should have 2 time units until it's ready" do
-        @t.min_distance_to_valid_combo(0).should == 2
-        @t.min_distance_to_valid_combo(2).should == 0
-        @t.min_distance_to_valid_combo(100).should == 0
+        @t.min_distance_to_valid_combo.should == 2
       end
 
       describe "when advancing the time" do
@@ -120,7 +118,7 @@ describe CPN::Transition do
         end
 
         it "should be ready" do
-          @t.should be_ready(@cpn.time)
+          @t.should be_ready
         end
 
         describe "when firing" do
@@ -133,7 +131,7 @@ describe CPN::Transition do
           end
 
           it "should not be ready" do
-            @t.should_not be_ready(@cpn.time)
+            @t.should_not be_ready
           end
 
           it "should have a token on Time ready at 5" do
@@ -187,11 +185,11 @@ describe CPN::Transition do
       end
 
       it "should not be ready" do
-        @t.should_not be_ready(@cpn.time)
+        @t.should_not be_ready
       end
 
       it "should have nil time units until it's ready" do
-        @t.min_distance_to_valid_combo(0).should be_nil 
+        @t.min_distance_to_valid_combo.should be_nil 
       end
 
       describe "when advancing the time and occurring" do
@@ -206,11 +204,11 @@ describe CPN::Transition do
         end
 
         it "should be ready" do
-          @t.should be_ready(@cpn.time)
+          @t.should be_ready
         end
 
         it "should have 0 time units until it's ready" do
-          @t.min_distance_to_valid_combo(@cpn.time).should == 0
+          @t.min_distance_to_valid_combo.should == 0
         end
       end
     end
@@ -232,14 +230,29 @@ describe CPN::Transition do
         @t = @cpn.transitions[:T]
       end
 
-      it "should be enabled and ready at 4" do
+      it "should not be ready at time 0" do
+        @cpn.time.should == 0
         @t.should be_enabled
-        @t.should be_ready(4)
+        @t.should_not be_ready
       end
 
-      it "should occur with the lowest timed token first" do
-        @t.occur(4).should_not be_nil
-        @cpn.states[:Dest].marking.to_a.should == [ { :id => 1 } ]
+      describe "after advancing time" do
+        before do
+          @cpn.advance_time
+        end
+
+        it "should be enabled and ready" do
+          @cpn.advance_time
+          @cpn.time.should == 1
+          @t.should be_enabled
+          @t.should be_ready
+        end
+
+        it "should occur with the lowest timed token first" do
+          @cpn.time.should == 1
+          @t.occur.should_not be_nil
+          @cpn.states[:Dest].marking.to_a.should == [ { :id => 1 } ]
+        end
       end
     end
   end

@@ -12,10 +12,10 @@ module CPN
     def set(tokens)
       @tokens = []
       changed
-      notify_observers(self, :token_removed, [])
+      notify_observers(self, :token_removed)
       @tokens = tokens
       changed
-      notify_observers(self, :token_added, @tokens.clone)
+      notify_observers(self, :token_added)
     end
 
     def empty?
@@ -30,7 +30,7 @@ module CPN
       @tokens << t
 
       changed
-      notify_observers(self, :token_added, @tokens.clone)
+      notify_observers(self, :token_added)
     end
 
     def delete(t)
@@ -39,7 +39,7 @@ module CPN
       @tokens.delete_at(i)
 
       changed
-      notify_observers(self, :token_removed, @tokens.clone)
+      notify_observers(self, :token_removed)
     end
 
     def to_s

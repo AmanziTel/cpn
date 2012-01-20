@@ -8,9 +8,9 @@ describe CPN::Net do
       @cpn = CPN::build :fig1 do
 
         state :Send do |s|
-          s.description = "Packets to send"
           s.initial = "[ 1, 'x' ], [ 2, 'y' ]"
           s.properties = {
+            :description => "Packets to send",
             :screen_x => 100,
             :screen_y => 150
           }
@@ -34,11 +34,8 @@ describe CPN::Net do
       end
     end
 
-    it "can set the description of a state" do
-      @cpn.states[:Send].description.should == "Packets to send"
-    end
-
     it "can get properties on a state" do
+      @cpn.states[:Send].properties[:description].should == "Packets to send"
       @cpn.states[:Send].properties[:screen_x].should == 100
       @cpn.states[:Send].properties[:screen_y].should == 150
     end

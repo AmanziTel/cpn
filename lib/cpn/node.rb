@@ -4,7 +4,7 @@ module CPN
   class Node
     include Observable
 
-    attr_accessor :name, :description
+    attr_accessor :name, :container
     attr_accessor :incoming, :outgoing
     attr_accessor :properties
 
@@ -12,6 +12,12 @@ module CPN
       @name = name
       @incoming, @outgoing = [], []
       @properties = {}
+    end
+
+    def qname
+      qn = name
+      qn = "#{@container.qname}::#{qn}" if @container
+      qn
     end
 
   end

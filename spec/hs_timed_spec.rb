@@ -6,7 +6,7 @@ describe "HS timed CPN::Net" do
   CAR3 = { :id => 3 }
 
   context "Hierarchical timed net" do
-    before(:all) do
+    before do
       @cpn = CPN.build :Top do
         state :Waiting, "{ :id => 3 }.ready_at(6), { :id => 1 }.ready_at(1), { :id => 2 }.ready_at(2)"
         state :OnRamp1
@@ -81,7 +81,7 @@ describe "HS timed CPN::Net" do
       ss
     end
 
-    context "with initial markings" do
+    context "initially" do
       describe "the stateset" do
         it "should be empty except for Top::Waiting and StartRamp::In" do
           statemap(@cpn).should == {
@@ -111,102 +111,66 @@ describe "HS timed CPN::Net" do
           @cpn.time.should == 0
         end
       end
-    end
 
-    context "after advancing the time and occurring once," do
-      before(:all) do
-        @cpn.occur_next.should be_nil
-        @cpn.advance_time
-        @cpn.occur_next.should_not be_nil
-      end
-
-      describe "the time" do
-        it "should be 1" do
-          @cpn.time.should == 1
-        end
-      end
-
-      describe "the stateset" do
-        it "should have moved car 1 onto Top::OnRamp1, StartRamp::Out and Move1::In" do
-          statemap(@cpn).should == {
-            'Top::Waiting'        => [ CAR3, CAR2 ],
-            'Top::OnRamp1'        => [ CAR1 ],
-            'Top::OnRamp1Count'   => [ 1 ],
-            'Top::Road1'          => [],
-            'Top::Road1Count'     => [ 0 ],
-            'Top::AtDest'         => [],
-            'StartRamp::In'       => [ CAR3, CAR2 ],
-            'StartRamp::Out'      => [ CAR1 ],
-            'StartRamp::OutCount' => [ 1 ],
-            'Move1::In'           => [ CAR1 ],
-            'Move1::Out'          => [],
-            'Move1::InCount'      => [ 1 ],
-            'Move1::OutCount'     => [ 0 ],
-            'Move2::In'           => [],
-            'Move2::Out'          => [],
-            'Move2::InCount'      => [ 0 ],
-            'Move2::OutCount'     => [ 0 ]
-          }
-        end
-      end
-
-      context "twice, " do
-        before(:all) do
+      context "then after advancing the time and occurring once," do
+        before do
           @cpn.occur_next.should be_nil
           @cpn.advance_time
           @cpn.occur_next.should_not be_nil
         end
 
+        describe "the time" do
+          it "should be 1" do
+            @cpn.time.should == 1
+          end
+        end
+
         describe "the stateset" do
-          it "should have car 1 on Top::Road1, Move1::Out and Move2::In" do
+          it "should have moved car 1 onto Top::OnRamp1, StartRamp::Out and Move1::In" do
             statemap(@cpn).should == {
               'Top::Waiting'        => [ CAR3, CAR2 ],
-              'Top::OnRamp1'        => [],
-              'Top::OnRamp1Count'   => [ 0 ],
-              'Top::Road1'          => [ CAR1 ],
-              'Top::Road1Count'     => [ 1 ],
+              'Top::OnRamp1'        => [ CAR1 ],
+              'Top::OnRamp1Count'   => [ 1 ],
+              'Top::Road1'          => [],
+              'Top::Road1Count'     => [ 0 ],
               'Top::AtDest'         => [],
               'StartRamp::In'       => [ CAR3, CAR2 ],
-              'StartRamp::Out'      => [],
-              'StartRamp::OutCount' => [ 0 ],
-              'Move1::In'           => [],
-              'Move1::Out'          => [ CAR1 ],
-              'Move1::InCount'      => [ 0 ],
-              'Move1::OutCount'     => [ 1 ],
-              'Move2::In'           => [ CAR1 ],
+              'StartRamp::Out'      => [ CAR1 ],
+              'StartRamp::OutCount' => [ 1 ],
+              'Move1::In'           => [ CAR1 ],
+              'Move1::Out'          => [],
+              'Move1::InCount'      => [ 1 ],
+              'Move1::OutCount'     => [ 0 ],
+              'Move2::In'           => [],
               'Move2::Out'          => [],
-              'Move2::InCount'      => [ 1 ],
+              'Move2::InCount'      => [ 0 ],
               'Move2::OutCount'     => [ 0 ]
             }
           end
         end
 
-        describe "the time" do
-          it "should be 4" do
-            @cpn.time.should == 4
-          end
-        end
-
-        context "thrice (same time), " do
-          before(:all) do
+        context "twice, " do
+          before do
+            @cpn.occur_next.should be_nil
+            @cpn.advance_time
             @cpn.occur_next.should_not be_nil
           end
 
           describe "the stateset" do
-            it "should move car 2 onto the ramp" do
+            it "should have car 1 on Top::Road1, Move1::Out and Move2::In" do
               statemap(@cpn).should == {
-                'Top::Waiting'        => [ CAR3 ],
-                'Top::OnRamp1'        => [ CAR2 ],
-                'Top::OnRamp1Count'   => [ 1 ],
+                'Top::Waiting'        => [ CAR3, CAR2 ],
+                'Top::OnRamp1'        => [],
+                'Top::OnRamp1Count'   => [ 0 ],
                 'Top::Road1'          => [ CAR1 ],
                 'Top::Road1Count'     => [ 1 ],
                 'Top::AtDest'         => [],
-                'StartRamp::In'       => [ CAR3 ],
-                'StartRamp::Out'      => [ CAR2 ],
-                'StartRamp::OutCount' => [ 1 ],
-                'Move1::In'           => [ CAR2 ],
+                'StartRamp::In'       => [ CAR3, CAR2 ],
+                'StartRamp::Out'      => [],
+                'StartRamp::OutCount' => [ 0 ],
+                'Move1::In'           => [],
                 'Move1::Out'          => [ CAR1 ],
-                'Move1::InCount'      => [ 1 ],
+                'Move1::InCount'      => [ 0 ],
                 'Move1::OutCount'     => [ 1 ],
                 'Move2::In'           => [ CAR1 ],
                 'Move2::Out'          => [],
@@ -216,8 +180,81 @@ describe "HS timed CPN::Net" do
             end
           end
 
+          describe "the time" do
+            it "should be 4" do
+              @cpn.time.should == 4
+            end
+          end
+
+          context "thrice (same time), " do
+            before do
+              @cpn.occur_next.should_not be_nil
+            end
+
+            describe "the stateset" do
+              it "should move car 2 onto the ramp" do
+                statemap(@cpn).should == {
+                  'Top::Waiting'        => [ CAR3 ],
+                  'Top::OnRamp1'        => [ CAR2 ],
+                  'Top::OnRamp1Count'   => [ 1 ],
+                  'Top::Road1'          => [ CAR1 ],
+                  'Top::Road1Count'     => [ 1 ],
+                  'Top::AtDest'         => [],
+                  'StartRamp::In'       => [ CAR3 ],
+                  'StartRamp::Out'      => [ CAR2 ],
+                  'StartRamp::OutCount' => [ 1 ],
+                  'Move1::In'           => [ CAR2 ],
+                  'Move1::Out'          => [ CAR1 ],
+                  'Move1::InCount'      => [ 1 ],
+                  'Move1::OutCount'     => [ 1 ],
+                  'Move2::In'           => [ CAR1 ],
+                  'Move2::Out'          => [],
+                  'Move2::InCount'      => [ 1 ],
+                  'Move2::OutCount'     => [ 0 ]
+                }
+              end
+            end
+          end
         end
       end
+    end
+
+    context "activity logging and monitoring" do
+
+      class SimpleLogger
+        attr_reader :log
+        def initialize(net)
+          @net = net
+          @log = []
+          net.add_observer(self)
+        end 
+
+        def update(node, op)
+          entry = [ @net.time, node.qname, op ]
+          entry << node.marking.to_a if op == :token_added || op == :token_removed
+          @log << entry
+        end
+      end
+
+      describe "when monitoring the entire net and occurring 5 times" do
+        before do
+          @logger = SimpleLogger.new(@cpn)
+          5.times do
+            @cpn.occur_advancing_time.should_not be_nil
+          end
+        end
+
+        it "should report all token count changes" do
+          @cpn.time.should == 7
+          @logger.log.select{|e| e[2] == :token_added || e[2] == :token_removed}.count.should == 71
+        end
+
+        it "should report all transition after-firings" do
+          @logger.log.select{|e| e[2] == :after_fire}.count.should == 5
+        end
+      end
+
+
     end
   end
 

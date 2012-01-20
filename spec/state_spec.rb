@@ -42,10 +42,10 @@ describe CPN::State do
       describe "after firing the transition" do
         before do
           @listener = []
-          def @listener.updated(source, op, marking)
-            self << [ source, op, marking ]
+          def @listener.update(source, op)
+            self << [ source, op, source.marking.to_a ]
           end
-          @s.add_observer(@listener, :updated)
+          @s.add_observer(@listener)
           @t.occur
         end
 

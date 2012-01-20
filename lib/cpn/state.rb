@@ -7,7 +7,7 @@ module CPN
     def initialize(name)
       super
       @marking = CPN::Marking.new
-      @marking.add_observer(self, :updated)
+      @marking.add_observer(self)
     end
 
     def initial=(init_expr)
@@ -27,9 +27,10 @@ module CPN
       @marking << token
     end
 
-    def updated(source, op, marking)
+    def update(source, op)
       changed
-      notify_observers(self, op, marking.to_a)
+      notify_observers(self, op)
+      @container.fire_state_changed(self, op) if @container
     end
 
     def to_s
@@ -45,7 +46,7 @@ module CPN
     def fuse_with(source_state)
       @marking.delete_observer(self)
       @marking = source_state.marking
-      @marking.add_observer(self, :updated)
+      @marking.add_observer(self)
     end
   end
 end

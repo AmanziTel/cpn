@@ -13,23 +13,41 @@ module CPN
   end
 
   class Page < Node
-    attr_reader :states, :transitions, :arcs, :pages, :superpage, :fuse_arcs, :prototype
+    attr_reader :states, :transitions, :arcs, :pages, :fuse_arcs, :prototype
 
-    def initialize(name, superpage = nil)
+    def initialize(name, container = nil)
       super(name)
-      @superpage = superpage
+      @container = container
       @states, @transitions = {}, {}
       @arcs = []
       @pages = {}
       @fuse_arcs = []
     end
 
+    def net
+      container && container.net
+    end
+
+    def fire_transition_fired(t, op)
+      changed
+      notify_observers(t, op)
+      container.fire_transition_fired(t, op) if container
+    end
+
+    def fire_state_changed(s, op)
+      changed
+      notify_observers(s, op)
+      container.fire_state_changed(s, op) if container
+    end
+
     def add_state(state)
       @states[state.name] = state
+      state.container = self
     end
 
     def add_transition(transition)
       @transitions[transition.name] = transition
+      transition.container = self
     end
 
     def add_arc(arc)
@@ -45,6 +63,7 @@ module CPN
 
     def add_page(page)
       @pages[page.name] = page
+      raise "Page does not belong here" unless page.container == self
     end
 
     def each_transition
@@ -63,9 +82,9 @@ module CPN
       enabled
     end
 
-    def ready_transitions(at_time)
+    def ready_transitions
       enabled_transitions.select do |t|
-        t.ready?(at_time)
+        t.ready?
       end
     end
 
@@ -84,10 +103,10 @@ module CPN
     end
 
     def fuse(superstate_name, substate_name)
-      superstate = @superpage.states[superstate_name]
+      superstate = @container.states[superstate_name]
       raise "Superstate '#{superstate_name}' not found" unless superstate
       @states[substate_name].fuse_with(superstate)
-      @superpage.add_fuse_arc(superstate, self)
+      @container.add_fuse_arc(superstate, self)
     end
 
     def prototype=(prototype)
@@ -96,7 +115,7 @@ module CPN
         raise "No resolver given" unless @resolver
         @prototype = @resolver.resolve(prototype)
       else
-        @prototype = superpage.pages[prototype]
+        @prototype = @container.pages[prototype]
       end
       raise "Unable to resolve prototype" unless @prototype
       @prototype.each_state do |s|
@@ -121,9 +140,15 @@ module CPN
       self
     end
 
-    def min_distance_to_valid_combo(time_now)
-      ds = @transitions.values.map{ |t| t.min_distance_to_valid_combo(time_now) }
+    def min_distance_to_valid_combo
+      ds = @transitions.values.map{ |t| t.min_distance_to_valid_combo }
       ds.compact.min
+    end
+
+    def qname
+      qn = name
+      qn = "#{@container.qname}::#{qn}" if @container
+      qn
     end
 
     def to_s
@@ -143,13 +168,25 @@ module CPN
       @time = 0
     end
 
+    def net
+      self
+    end
+
     def occur_next
-      ready = ready_transitions(@time)
-      ready.sample.occur(@time) if ready.length > 0
+      ready = ready_transitions
+      if ready.length > 0
+        t = ready.sample
+        t.occur
+      end
+    end
+
+    def occur_advancing_time
+      advance_time if ready_transitions.empty?
+      occur_next
     end
 
     def advance_time
-      d = min_distance_to_valid_combo(@time)
+      d = min_distance_to_valid_combo
       @time += d unless d.nil?
     end
 
