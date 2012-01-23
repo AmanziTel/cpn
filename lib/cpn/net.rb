@@ -24,10 +24,6 @@ module CPN
       @fuse_arcs = []
     end
 
-    def net
-      container && container.net
-    end
-
     def fire_transition_fired(t, op)
       changed
       notify_observers(t, op)

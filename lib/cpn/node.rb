@@ -20,6 +20,10 @@ module CPN
       qn
     end
 
+    def net
+      container && container.net
+    end
+
   end
 end
 
