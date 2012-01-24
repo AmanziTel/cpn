@@ -184,6 +184,10 @@ module CPN
     def advance_time
       d = min_distance_to_valid_combo
       @time += d unless d.nil?
+
+      changed
+      notify_observers(self, :tick)
+      @time
     end
 
     def dump

@@ -249,6 +249,10 @@ describe "HS timed CPN::Net" do
           @logger.log.select{|e| e[2] == :token_added || e[2] == :token_removed}.count.should == 71
         end
 
+        it "should report time changes as ticks" do
+          @logger.log.select{|e| e[2] == :tick }.count.should == 3
+        end
+
         it "should report all transition after-firings" do
           @logger.log.select{|e| e[2] == :after_fire}.count.should == 5
         end
