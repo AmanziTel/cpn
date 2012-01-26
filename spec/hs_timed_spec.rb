@@ -234,7 +234,7 @@ describe "HS timed CPN::Net" do
               "Top::StartRamp::OutCount", "Top::Move1::InCount" ] },
             { :after_fire => [ "Top::StartRamp::Move" ] }
           ]
-          @cpn.on([ :token_added, :token_removed, :tick, :before_fire, :after_fire ]) do |node, op|
+          @cpn.on(CPN::ALL_EVENTS) do |node, op|
             expected.should_not be_empty
             expected.first.keys.should include(op)
             ex = expected.first[op]

@@ -5,8 +5,9 @@ module CPN
     include CPN::Observable
     include Enumerable
 
+    event_source :token_added, :token_removed
+
     def initialize
-      observable_event_types = [ :token_remove, :token_added ]
       @tokens = []
     end
 

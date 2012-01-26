@@ -7,7 +7,7 @@ module CPN
       ops = [ ops ] unless ops.respond_to?(:each)
       @observers ||= {}
       ops.each do |op|
-        raise "Unsupported op #{op}" unless observable_event_type(op)
+        raise "Unsupported op #{op}" unless observable_event_type?(op)
         @observers[op] ||= []
         @observers[op] << block
       end
@@ -22,18 +22,18 @@ module CPN
     end
 
     def fire(op, context = self)
-      raise "Unsupported op #{op}" unless observable_event_type(op)
+      raise "Unsupported op #{op}" unless observable_event_type?(op)
       @observers && @observers[op] && @observers[op].each do |block|
         block.call(context, op)
       end
     end
 
-    def observable_event_types=(arr)
-      @observable_event_types = arr
-    end
-
-    def observable_event_type(type)
-      @observable_event_types.nil? || @observable_event_types.include?(type)
+    def self.included(base)
+      def base.event_source(*event_types)
+        define_method :observable_event_type? do |type|
+          event_types.empty? || event_types.include?(type)
+        end
+      end
     end
 
   end

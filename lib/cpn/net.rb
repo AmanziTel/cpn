@@ -4,6 +4,7 @@ require File.expand_path("#{File.dirname __FILE__}/dsl_builder")
 require File.expand_path("#{File.dirname __FILE__}/json_builder")
 
 module CPN
+
   def self.build(name, &block)
     DSLBuilder.build_net(name, &block)
   end
@@ -15,6 +16,8 @@ module CPN
   class Page < Node
     include CPN::Observable
     attr_reader :states, :transitions, :arcs, :pages, :fuse_arcs, :prototype
+
+    event_source *CPN::ALL_EVENTS
 
     def initialize(name, container = nil)
       super(name)

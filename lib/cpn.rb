@@ -1,8 +1,9 @@
 
 module CPN
-  def self.build(name, &block)
-    Net.build(name, &block)
-  end
+  STATE_EVENTS = [ :token_added, :token_removed ]
+  TRANSITION_EVENTS = [ :before_fire, :after_fire ]
+  NET_EVENTS = [ :tick ]
+  ALL_EVENTS = STATE_EVENTS + TRANSITION_EVENTS + NET_EVENTS
 
   module TimedAvailability
     def ready_at(t)
