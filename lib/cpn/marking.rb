@@ -1,21 +1,20 @@
-require 'observer'
+require File.expand_path("#{File.dirname __FILE__}/observable.rb")
 
 module CPN
   class Marking
-    include Observable
+    include CPN::Observable
     include Enumerable
 
     def initialize
+      observable_event_types = [ :token_remove, :token_added ]
       @tokens = []
     end
 
     def set(tokens)
       @tokens = []
-      changed
-      notify_observers(self, :token_removed)
+      fire(:token_removed)
       @tokens = tokens
-      changed
-      notify_observers(self, :token_added)
+      fire(:token_added)
     end
 
     def empty?
@@ -29,8 +28,7 @@ module CPN
     def <<(t)
       @tokens << t
 
-      changed
-      notify_observers(self, :token_added)
+      fire(:token_added)
     end
 
     def delete(t)
@@ -38,8 +36,7 @@ module CPN
       raise "Unknown token #{t}" if i.nil?
       @tokens.delete_at(i)
 
-      changed
-      notify_observers(self, :token_removed)
+      fire(:token_removed)
     end
 
     def to_s

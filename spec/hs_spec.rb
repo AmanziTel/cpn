@@ -93,6 +93,21 @@ describe "HS CPN::Net" do
           end
         end
 
+        describe "StartRamp" do
+          it "should have OnRamp as a prototype" do
+            sr = @cpn.transitions[:StartRamp]
+            sr.name.should == :StartRamp
+            sr.prototype.should == @cpn.pages[:OnRamp]
+          end
+
+          it "should have an In state whose container should be StartRamp" do
+            sr = @cpn.transitions[:StartRamp]
+            sr_in = sr.states[:In]
+            sr_in.name.should == :In
+            sr_in.container.should == sr
+          end
+        end
+
         describe "the stateset" do
           it "should be empty except for Top::Waiting and StartRamp::In" do
             statemap(@cpn).should == {

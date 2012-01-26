@@ -219,46 +219,33 @@ describe "HS timed CPN::Net" do
       end
     end
 
-    context "activity logging and monitoring" do
+    context "activity monitoring" do
 
-      class SimpleLogger
-        attr_reader :log
-        def initialize(net)
-          @net = net
-          @log = []
-          net.add_observer(self)
-        end 
-
-        def update(node, op)
-          entry = [ @net.time, node.qname, op ]
-          entry << node.marking.to_a if op == :token_added || op == :token_removed
-          @log << entry
-        end
-      end
-
-      describe "when monitoring the entire net and occurring 5 times" do
-        before do
-          @logger = SimpleLogger.new(@cpn)
-          5.times do
-            @cpn.occur_advancing_time.should_not be_nil
+      describe "when monitoring the entire net and occurring once" do
+        it "should report tick, before_fire, 5 token removed, 5 token added, then after_fire" do
+          expected = [
+            { :tick => [ "Top" ] },
+            { :before_fire => [ "Top::StartRamp::Move" ] },
+            { :token_removed => [
+              "Top::Waiting", "Top::StartRamp::In", "Top::OnRamp1Count", 
+              "Top::StartRamp::OutCount", "Top::Move1::InCount" ] },
+            { :token_added => [
+              "Top::OnRamp1", "Top::StartRamp::Out", "Top::OnRamp1Count", 
+              "Top::StartRamp::OutCount", "Top::Move1::InCount" ] },
+            { :after_fire => [ "Top::StartRamp::Move" ] }
+          ]
+          @cpn.on([ :token_added, :token_removed, :tick, :before_fire, :after_fire ]) do |node, op|
+            expected.should_not be_empty
+            expected.first.keys.should include(op)
+            ex = expected.first[op]
+            ex.find(node.qname).should_not be_nil
+            ex.delete(node.qname)
+            expected.shift if ex.size == 0
           end
-        end
-
-        it "should report all token count changes" do
-          @cpn.time.should == 7
-          @logger.log.select{|e| e[2] == :token_added || e[2] == :token_removed}.count.should == 71
-        end
-
-        it "should report time changes as ticks" do
-          @logger.log.select{|e| e[2] == :tick }.count.should == 3
-        end
-
-        it "should report all transition after-firings" do
-          @logger.log.select{|e| e[2] == :after_fire}.count.should == 5
+          @cpn.occur_advancing_time.should_not be_nil
+          expected.size.should == 0
         end
       end
-
-
     end
   end
 

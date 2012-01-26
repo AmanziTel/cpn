@@ -41,11 +41,10 @@ describe CPN::State do
 
       describe "after firing the transition" do
         before do
-          @listener = []
-          def @listener.update(source, op)
-            self << [ source, op, source.marking.to_a ]
+          @log = []
+          @cpn.on([ :token_added, :token_removed ]) do |source, op|
+            @log << [ source, op, source.marking.to_a ]
           end
-          @s.add_observer(@listener)
           @t.occur
         end
 
@@ -54,7 +53,7 @@ describe CPN::State do
         end
 
         it "should have fired the listener with token_removed, token_added" do
-          @listener.should == [ [ @s, :token_removed, [] ], [ @s, :token_added, [ 1 ] ] ]
+          @log.should == [ [ @s, :token_removed, [] ], [ @s, :token_added, [ 1 ] ] ]
         end
 
       end

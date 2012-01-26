@@ -13,6 +13,7 @@ module CPN
   end
 
   class Page < Node
+    include CPN::Observable
     attr_reader :states, :transitions, :arcs, :pages, :fuse_arcs, :prototype
 
     def initialize(name, container = nil)
@@ -25,14 +26,12 @@ module CPN
     end
 
     def fire_transition_fired(t, op)
-      changed
-      notify_observers(t, op)
+      fire(op, t)
       container.fire_transition_fired(t, op) if container
     end
 
     def fire_state_changed(s, op)
-      changed
-      notify_observers(s, op)
+      fire(op, s)
       container.fire_state_changed(s, op) if container
     end
 
@@ -141,12 +140,15 @@ module CPN
       ds.compact.min
     end
 
-    def qname
-      qn = name
-      qn = "#{@container.qname}::#{qn}" if @container
-      qn
+    def reset
+      each_state do |s|
+        s.reset
+      end
+      each_transition do |t|
+        t.reset if t.respond_to? :reset
+      end
     end
-
+ 
     def to_s
       "Page: #{@name} " +
       "States #{@states.values.map(&:to_s).join(',')} " +
@@ -185,9 +187,14 @@ module CPN
       d = min_distance_to_valid_combo
       @time += d unless d.nil?
 
-      changed
-      notify_observers(self, :tick)
+      fire(:tick)
       @time
+    end
+
+    def reset
+      super
+      @time = 0
+      fire(:tick)
     end
 
     def dump

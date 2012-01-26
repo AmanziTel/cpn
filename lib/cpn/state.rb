@@ -1,4 +1,4 @@
-require File.expand_path("#{File.dirname __FILE__}/state")
+require File.expand_path("#{File.dirname __FILE__}/node")
 
 module CPN
   class State < Node
@@ -7,7 +7,7 @@ module CPN
     def initialize(name)
       super
       @marking = CPN::Marking.new
-      @marking.add_observer(self)
+      listen_to_marking
     end
 
     def initial=(init_expr)
@@ -27,12 +27,6 @@ module CPN
       @marking << token
     end
 
-    def update(source, op)
-      changed
-      notify_observers(self, op)
-      @container.fire_state_changed(self, op) if @container
-    end
-
     def to_s
       s = "(#{@name})"
       s << "{#{@marking.map(&:inspect).join(',')}}" unless @marking.empty?
@@ -44,9 +38,17 @@ module CPN
     end
 
     def fuse_with(source_state)
-      @marking.delete_observer(self)
+      @marking.remove_listeners
       @marking = source_state.marking
-      @marking.add_observer(self)
+      listen_to_marking
+    end
+
+    private
+
+    def listen_to_marking
+      @marking.on([ :token_added, :token_removed ]) do |source, op|
+        @container.fire_state_changed(self, op) if @container
+      end
     end
   end
 end

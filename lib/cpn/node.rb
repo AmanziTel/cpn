@@ -1,9 +1,5 @@
-require 'observer'
-
 module CPN
   class Node
-    include Observable
-
     attr_accessor :name, :container
     attr_accessor :incoming, :outgoing
     attr_accessor :properties
@@ -15,7 +11,7 @@ module CPN
     end
 
     def qname
-      qn = name
+      qn = name.to_s
       qn = "#{@container.qname}::#{qn}" if @container
       qn
     end

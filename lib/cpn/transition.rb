@@ -20,8 +20,6 @@ module CPN
       return nil if atcs.empty?
       arc_tokens = atcs.sample
 
-      changed
-      notify_observers(self, :before_fire)
       @container.fire_transition_fired(self, :before_fire)
 
       context = ArcTokenBinding.as_context(arc_tokens)
@@ -36,8 +34,6 @@ module CPN
         arc.add_token(token) unless token.nil?
       end
 
-      changed
-      notify_observers(self, :after_fire)
       @container.fire_transition_fired(self, :after_fire)
       self
     end
