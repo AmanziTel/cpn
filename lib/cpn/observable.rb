@@ -13,12 +13,14 @@ module CPN
       end
     end
 
-    def remove_listener(op, &block)
-      @observers && @observers[op] && @observers[op].delete(block)
-    end
-
-    def remove_listeners
-      @observers = {}
+    def off(op = nil, &block)
+      if block_given?
+        @observers && @observers[op] && @observers[op].delete(block)
+      elsif op
+        @observers && @observers[op] = []
+      else
+        @observers = {}
+      end
     end
 
     def fire(op, context = self)
