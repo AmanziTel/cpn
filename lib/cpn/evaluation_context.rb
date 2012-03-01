@@ -26,7 +26,7 @@ module CPN
       # as local to that.
       # The lambda is used so that values that can't easily be represented as text (e.g. objects)
       # can be assigned to also. If we restrict values (tokens) to be JSON data this is not needed.
-      (eval("#{lvalue} = nil if false ; lambda { |v| #{lvalue} = v }", get_binding)).call(value)
+      (eval("#{lvalue} = nil if false ; lambda { |__cpn_token_value| #{lvalue} = __cpn_token_value }", get_binding)).call(value)
       @var_names = nil
       @locals = nil
     end

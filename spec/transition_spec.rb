@@ -4,9 +4,9 @@ describe CPN::Transition do
 
   context "1 transition with a guard, used as a 0..2 counter" do
 
-    #  (Counter)0 ---{n}--> [Incr]{n < 2}
+    #  (Counter)0 ---{v}--> [Incr]{v < 2}
     #       ^                  |
-    #       --------{n+1}<------
+    #       --------{v+1}<------
     before do
       @cpn = CPN.build :ex2 do
 
@@ -15,15 +15,15 @@ describe CPN::Transition do
         end
 
         transition :Incr do |t|
-          t.guard = "n < 2"
+          t.guard = "v < 2"
         end
 
         arc :Counter, :Incr do |a|
-          a.expr = "n"
+          a.expr = "v"
         end
 
         arc :Incr, :Counter do |a|
-          a.expr = "n + 1"
+          a.expr = "v + 1"
         end
 
       end
