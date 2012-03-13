@@ -1,0 +1,107 @@
+== CPN.rb - Coloured Petri Nets in Ruby
+
+The CPN gem implements a subset of coloured petri nets in Ruby. This README describes
+how to create hierarchical, timed CPNs using the gem.
+
+CPNs consist of tokens, arcs, states and transitions. States and transitions have names.
+
+= Tokens
+
+A token is simply a Ruby Object. In timed nets, each token has a ready time, which is
+the time at which it's ready to participate in a transition firing. To set a ready time 
+on a token, only instances of Hash and Array are supported as tokens. Other classes 
+can be used as timed tokens by importing a module defining the .ready_at and .ready_at=
+methods.
+
+= Arcs
+
+An arc is a connection between a state and a transition. It either starts at the state 
+and ends at the transition, or vice-versa (it is directed). It has a Ruby expression 
+on it, the interpretation of which depends on wether it ends at a state or at a
+transition, so let's discuss the arc expression below.
+
+The visual representation of an arc is an arrow with a label at its middle with the
+arc expression on it, like so: ---[a,b]--->
+
+= States
+
+A state can hold a number of tokens, so it's pretty much just a fancy Array, unlike
+traditional CPNs which use Multisets.
+
+A state also defines an initial marking, which is the array of tokens that should be
+present on it when an execution/simulation starts. Kind of like a constructor method.
+
+Example initial markings: [ 1, 2, 3 ] or [ { :id => 1, :name => "x" } ]
+
+The visual representation of a state is a circle. Imagine it's a bucket that holds all
+the tokens. Currently, the tokens are shown to the right of the circle, in a list with
+one token per line.
+
+= Transitions
+
+A transition is like a method. It is invoked, or "fired", when certain requirements 
+are met. It has a guard expression, which is a Ruby expression that must evaluate to
+true or false.
+
+The transition has a number of incoming or outgoing arcs. The incoming arcs are the
+ones coming from states and pointing to the transition, and the outgoing arcs are 
+those starting at the transition, and pointing to some states. When we say "incoming
+states" we mean the states connected by an incoming arc, and with "outgoing
+states" we mean states connected by an outgoing arc.
+
+Now, for a transition to be able to fire, a number of things must be the case. 
+(A binding is mapping from a number of local variables to their values)
+
+1. There must be at least one token on each of the incoming states. For timed nets,
+   the ready time of the token must be equal to or greater than the simulation time.
+2. It should be possible to construct a binding by, for each incoming arc,
+   assigning the arc expression to one of the tokens on its associated state.
+   There should be no conflicts between arc expressions that define the same variables,
+   so for example if two arcs define 'n', then there must be two tokens with the
+   same value on each of those arcs' incoming states, or the binding is invalid.
+3. The guard expression must evaluate to true, given this binding.
+
+If all these conditions are met, we are left with a list of valid bindings. If there
+is at least one, the transition is enabled and may be fired.
+
+When a transition (or more accurately, a specific binding) is fired, each of the tokens
+associated with the binding (on incoming states) are removed, and the expressions
+on the outgoing arcs are used to produce a token on each outgoing state.
+
+Consequently, incoming arc expressions must be Ruby lvalues, i.e. expressions that
+may appear on the left side of an assignment statement, when a token from the incoming
+state is placed on the right side. Examples of lvalues:
+
+i (assigns i to the token)
+a, b (if the token is an array of two values)
+(a, b) (same as above)
+first, *rest (if the token is an array)
+a, (b, c), d (assign to a nested array like [1, [2, 3], 4])
+
+Outgoing arc expressions are used differently - to produce a token given a binding.
+For example, given the following binding:
+  i => 1
+  status => :error
+  a => [ 1, 3, 5, 7, 9 ]
+  h => { :id => 11, :msg => "start" }
+  
+All of the following are legal outgoing arc expressions:
+
+  i
+  status
+  1
+  :error
+  { :index => i, :status => status }
+  a[1..2]
+  [ h[:id], h[:msg] ]
+
+Note: be careful if placing the same object on multiple outgoing states - nothing is 
+duplicated, so later modifications of that object may affect the state of the 
+network in unexpected ways.
+
+The visual representation of a transition is a rectangle that lights up in a flash
+when it fires. Imagine tokens moving through the rectangle when it fires, from its
+inputs to its outputs.
+
+
+
