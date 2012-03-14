@@ -39,6 +39,7 @@ module CPN
 
     def fuse_with(source_state)
       @marking.off
+      source_state.marking.fuse_with(@marking)
       @marking = source_state.marking
       listen_to_marking
     end

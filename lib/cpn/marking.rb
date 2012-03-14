@@ -40,6 +40,14 @@ module CPN
       fire(:token_removed)
     end
 
+    def fuse_with(marking)
+      if empty?
+        marking.each do |t|
+          @tokens << t
+        end
+      end
+    end
+
     def to_s
       @tokens.to_s
     end

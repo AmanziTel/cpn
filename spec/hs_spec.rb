@@ -2,6 +2,19 @@ require 'spec_helper'
 
 describe "HS CPN::Net" do
 
+  def statemap(page)
+    ss = {}
+    page.states.each do |n, s|
+      ss["#{page.name}::#{n.to_s}"] = s.marking.to_a
+    end
+    page.transitions.each do |n, t|
+      if t.respond_to? :states
+        ss.merge!(statemap(t))
+      end
+    end
+    ss
+  end
+
   #TODO: test "remote"
   [ "local" ].each do |method|
     context "Hierarchical net with #{method} subpages" do
@@ -71,19 +84,6 @@ describe "HS CPN::Net" do
             t.fuse :AtDest, :Out
           end
         end
-      end
-
-      def statemap(page)
-        ss = {}
-        page.states.each do |n, s|
-          ss["#{page.name}::#{n.to_s}"] = s.marking.to_a
-        end
-        page.transitions.each do |n, t|
-          if t.respond_to? :states
-            ss.merge!(statemap(t))
-          end
-        end
-        ss
       end
 
       context "with initial markings" do
@@ -230,5 +230,79 @@ describe "HS CPN::Net" do
       end
     end
   end
+
+  describe "Hierarchical net with tokens on both super and sub fused places" do
+    before do
+      @cpn = CPN.build :Top do
+        state :Waiting, "{ :make => 'Honda' }"
+
+        page :SubPage do
+          state :SubWaiting, "{ :make => 'Peugeot' }"
+        end
+
+        hs_transition :T do |t|
+          t.prototype = :SubPage
+          t.fuse :Waiting, :SubWaiting
+        end
+      end
+    end
+
+    it "should use the initial token set of the super states" do
+      statemap(@cpn).should == {
+        'Top::Waiting'        => [ { :make => 'Honda' } ],
+        'T::SubWaiting'       => [ { :make => 'Honda' } ]
+      }
+    end
+  end
+
+  describe "Hierarchical net with tokens on only super fused places" do
+    before do
+      @cpn = CPN.build :Top do
+        state :Waiting, "{ :make => 'Honda' }"
+
+        page :SubPage do
+          state :SubWaiting
+        end
+
+        hs_transition :T do |t|
+          t.prototype = :SubPage
+          t.fuse :Waiting, :SubWaiting
+        end
+      end
+    end
+
+    it "should use the initial token set of the super states" do
+      statemap(@cpn).should == {
+        'Top::Waiting'        => [ { :make => 'Honda' } ],
+        'T::SubWaiting'       => [ { :make => 'Honda' } ]
+      }
+    end
+  end
+
+  describe "Hierarchical net with tokens on only sub fused places" do
+    before do
+      @cpn = CPN.build :Top do
+        state :Waiting
+
+        page :SubPage do
+          state :SubWaiting, "{ :make => 'Peugeot' }"
+        end
+
+        hs_transition :T do |t|
+          t.prototype = :SubPage
+          t.fuse :Waiting, :SubWaiting
+        end
+      end
+    end
+
+    it "should use the initial token set of the sub states" do
+      statemap(@cpn).should == {
+        'Top::Waiting'        => [ { :make => 'Peugeot' } ],
+        'T::SubWaiting'       => [ { :make => 'Peugeot' } ]
+      }
+    end
+  end
+
 end
+
 
