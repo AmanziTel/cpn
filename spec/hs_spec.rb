@@ -303,6 +303,51 @@ describe "HS CPN::Net" do
     end
   end
 
+  pending do
+  describe "Hierarchical net with 3 fused places" do
+    before do
+      @cpn = CPN.build :Top do
+        state :W1
+        state :W2
+
+        page :SubPage do
+          state :SubW, "27"
+          transition :Decr 
+          arc :SubW, :Decr, "n"
+          arc :Decr, :SubW, "n - 1"
+        end
+
+        hs_transition :T do |t|
+          t.prototype = :SubPage
+          t.fuse :W1, :SubW
+          t.fuse :W2, :SubW
+        end
+      end
+    end
+
+    it "should use the initial token set of the sub state" do
+      statemap(@cpn).should == {
+        'Top::W1'  => [ 27 ],
+        'Top::W2'  => [ 27 ],
+        'T::SubW'  => [ 27 ]
+      }
+    end
+
+    describe "after occurring once, " do
+      before do
+        @cpn.occur_next
+      end
+
+      it "should have 26 on all states" do
+        statemap(@cpn).should == {
+          'Top::W1'  => [ 26 ],
+          'Top::W2'  => [ 26 ],
+          'T::SubW'  => [ 26 ]
+        }
+      end
+    end
+  end
+  end
 end
 
 
