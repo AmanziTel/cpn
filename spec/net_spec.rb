@@ -448,5 +448,69 @@ describe CPN::Net do
 
   end
 
+  describe "Timed net with hashes as tokens" do
+    before do
+      @cpn = CPN.build :pipeline do
+        state :Pressure, 10.0
+        state :PDelta, 0.0
+        state :Damper, "[]"
+
+        transition :Adjust
+
+        arc :Pressure, :Adjust, "pressure"
+        arc :Adjust, :Pressure, "pressure + delta"
+        arc :PDelta, :Adjust, "delta"
+        arc :Adjust, :PDelta, "delta"
+        arc :Adjust, :Damper, "[].ready_at(5)"
+        arc :Damper, :Adjust, ""
+
+        state :Leaks, "{ :info => 'Major breach', :delta => -0.5, :duration => 7 }.ready_at(11)"
+        state :Leaking
+        transition :Occur
+        transition :Fix
+
+        arc :Leaks, :Occur, "leak"
+        arc :PDelta, :Occur, "delta"
+        arc :Occur, :PDelta, "delta + leak[:delta]"
+        arc :Occur, :Leaking, "leak.ready_at(leak[:duration])"
+        arc :Leaking, :Fix, "leak"
+        arc :PDelta, :Fix, "delta"
+        arc :Fix, :PDelta, "delta - leak[:delta]"
+      end
+    end
+
+    describe "after adjusting twice and occuring once, " do
+      before do
+        @leak = @cpn.states[:Leaks].marking.first
+        @cpn.occur_advancing_time.should == @cpn.transitions[:Adjust]
+        @cpn.time.should == 0
+        @cpn.occur_advancing_time.should == @cpn.transitions[:Adjust]
+        @cpn.time.should == 5
+        @cpn.occur_advancing_time.should == @cpn.transitions[:Adjust]
+        @cpn.time.should == 10
+        @cpn.occur_advancing_time.should == @cpn.transitions[:Occur]
+        @cpn.time.should == 11
+      end
+
+      it "enters the Leaking state" do
+        @cpn.states[:Leaking].marking.first.should == @leak
+        @cpn.states[:PDelta].marking.first.should == -0.5
+      end
+
+      describe "then adjusting 3 times" do
+        before do
+          @cpn.occur_advancing_time.should == @cpn.transitions[:Adjust]
+          @cpn.time.should == 15
+          @cpn.occur_advancing_time.should == @cpn.transitions[:Fix]
+          @cpn.time.should == 18
+        end
+
+        it "should have fixed the leak" do
+          @cpn.states[:PDelta].marking.first.should == 0.0
+        end
+      end
+    end
+  end
+
 end
 
