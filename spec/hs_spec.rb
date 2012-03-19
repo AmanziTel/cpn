@@ -348,6 +348,45 @@ describe "HS CPN::Net" do
     end
   end
   end
+
+  describe "Hierarchical net with a state that is not fused" do
+    before do
+      @cpn = CPN.build :Top do
+        state :S
+
+        page :SubPage do
+          state :S1, ":token"
+          state :S2
+          transition :T
+          arc :S1, :T
+          arc :T, :S2
+        end
+
+        hs_transition :HS do |t|
+          t.prototype = :SubPage
+          t.fuse :S, :S2
+        end
+      end
+    end
+
+    describe "after occurring once, " do
+      before do
+        @triggered = nil
+        @cpn.on(:token_removed) do |state|
+          @triggered = state.name
+        end
+        @cpn.occur_next
+      end
+
+      it "should trigger the listener on the net" do
+        @triggered.should == :S1
+      end
+
+      it "should have placed :token on :S" do
+        @cpn.states[:S].marking.first.should == :token
+      end
+    end
+  end
 end
 
 
