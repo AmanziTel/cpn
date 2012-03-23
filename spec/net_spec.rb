@@ -103,17 +103,17 @@ describe CPN::Net do
 
   end
 
-  context "A[42], B[42] --> T --> C, D" do
+  context "A[12, 42], B[42, 56] --> T --> C, D" do
   # with no expressions should place a 42 token on C and on D
 
     before do
       @cpn = CPN.build :noexpr do
 
         state :A do |s|
-          s.initial = "42"
+          s.initial = "12, 42"
         end
         state :B do |s|
-          s.initial = "42"
+          s.initial = "42, 56"
         end
         state :C
         state :D
@@ -135,14 +135,57 @@ describe CPN::Net do
       it "should be able to occur, placing a 42 token in C and D" do
         @cpn.transitions[:T].occur
         @cpn.transitions[:T].should_not be_enabled
-        @cpn.states[:A].marking.to_a.should be_empty
-        @cpn.states[:B].marking.to_a.should be_empty
+        @cpn.states[:A].marking.to_a.should == [ 12 ]
+        @cpn.states[:B].marking.to_a.should == [ 56 ]
         @cpn.states[:C].marking.to_a.should == [ 42 ]
         @cpn.states[:D].marking.to_a.should == [ 42 ]
       end
     end
 
   end
+
+  context "A[42] ----> T, B[27] --b--> T --> (C, D), T --b--> B" do
+  # with a mixture of expressions and no expressions should place a 42 token on C and D, and 27 back on B
+
+    before do
+      @cpn = CPN.build :noexpr2 do
+
+        state :A do |s|
+          s.initial = "42"
+        end
+        state :B do |s|
+          s.initial = "27"
+        end
+        state :C
+        state :D
+
+        transition :T
+
+        arc :A, :T
+        arc :B, :T, "b"
+        arc :T, :C
+        arc :T, :D
+        arc :T, :B, "b"
+      end
+    end
+
+    describe "the transition T" do
+      it "should be enabled" do
+        @cpn.transitions[:T].should be_enabled
+      end
+
+      it "should be able to occur, placing a 42 token in C and D, and 27 back on B" do
+        @cpn.transitions[:T].occur
+        @cpn.transitions[:T].should_not be_enabled
+        @cpn.states[:A].marking.to_a.should == []
+        @cpn.states[:B].marking.to_a.should == [ 27 ]
+        @cpn.states[:C].marking.to_a.should == [ 42 ]
+        @cpn.states[:D].marking.to_a.should == [ 42 ]
+      end
+    end
+
+  end
+
 
   context "Full SendPacket diagram" do
 

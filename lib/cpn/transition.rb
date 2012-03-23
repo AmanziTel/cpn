@@ -30,7 +30,7 @@ module CPN
       end
 
       @outgoing.each do |arc|
-        token = context.eval_output(arc.expr, at_time)
+        token = context.eval_output(arc.expr || "_token", at_time)
         arc.add_token(token) unless token.nil?
       end
 

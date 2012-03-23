@@ -6,7 +6,7 @@ module CPN
     # An expr would typically have the form @x, @y and a token an array with two items.
     def self.setup(expr, token)
       ctx = EvaluationContext.new
-      expr = "token" if expr.nil? || expr.length == 0
+      expr = "_token" if expr.nil? || expr.length == 0
       ctx.set(expr, token)
       ctx
     end
