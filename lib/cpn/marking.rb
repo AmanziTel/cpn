@@ -5,17 +5,14 @@ module CPN
     include CPN::Observable
     include Enumerable
 
-    event_source :token_added, :token_removed
+    event_source :updated
 
     def initialize
       @tokens = []
     end
 
     def set(tokens)
-      @tokens = []
-      fire(:token_removed)
       @tokens = tokens
-      fire(:token_added)
     end
 
     def empty?
@@ -28,16 +25,12 @@ module CPN
 
     def <<(t)
       @tokens << t
-
-      fire(:token_added)
     end
 
     def delete(t)
       i = @tokens.index(t)
       raise "Unknown token #{t}" if i.nil?
       @tokens.delete_at(i)
-
-      fire(:token_removed)
     end
 
     def fuse_with(marking)

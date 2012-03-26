@@ -34,8 +34,8 @@ module CPN
     end
 
     def fire_state_changed(s, op)
-      fire(op, s)
-      container.fire_state_changed(s, op) if container
+      fire(:state_changed, s)
+      container.fire_state_changed(s, :state_changed) if container
     end
 
     def add_state(state)

@@ -23,17 +23,23 @@ module CPN
       @container.fire_transition_fired(self, :before_fire)
 
       context = ArcTokenBinding.as_context(arc_tokens)
+      states = []
       arc_tokens.each do |at|
         t = at.token
         at.arc.remove_token(t)
         t.ready_at(0) if t.respond_to? :ready_at
+        states << at.arc.from
       end
 
       @outgoing.each do |arc|
         token = context.eval_output(arc.expr || "_token", at_time)
         arc.add_token(token) unless token.nil?
+        states << arc.to
       end
 
+      states.uniq.each do |s|
+        s.marking.fire(:updated)
+      end
       @container.fire_transition_fired(self, :after_fire)
       self
     end

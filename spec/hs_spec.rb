@@ -371,15 +371,15 @@ describe "HS CPN::Net" do
 
     describe "after occurring once, " do
       before do
-        @triggered = nil
-        @cpn.on(:token_removed) do |state|
-          @triggered = state.name
+        @triggered = []
+        @cpn.on(:state_changed) do |state|
+          @triggered << state.name
         end
         @cpn.occur_next
       end
 
       it "should trigger the listener on the net" do
-        @triggered.should == :S1
+        @triggered.should == [ :S1, :S, :S2 ]
       end
 
       it "should have placed :token on :S" do

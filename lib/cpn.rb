@@ -1,6 +1,6 @@
 
 module CPN
-  STATE_EVENTS = [ :token_added, :token_removed ]
+  STATE_EVENTS = [ :state_changed ]
   TRANSITION_EVENTS = [ :before_fire, :after_fire ]
   NET_EVENTS = [ :tick ]
   ALL_EVENTS = STATE_EVENTS + TRANSITION_EVENTS + NET_EVENTS

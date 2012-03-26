@@ -91,7 +91,7 @@ describe CPN::Net do
       describe "with a marking of '3' on NextSend" do
         before do
           @cpn.transitions[:SendPacket].should be_enabled
-          @cpn.states[:NextSend].marking = [ 3 ]
+          @cpn.states[:NextSend].marking.set([ 3 ])
         end
 
         it "should not be enabled" do
@@ -344,7 +344,7 @@ describe CPN::Net do
         end
 
         it "can occur, placing nothing on B if NetworkQuality is 0" do
-          @cpn.states[:NetworkQuality].marking = [ 0 ]
+          @cpn.states[:NetworkQuality].marking.set([ 0 ])
           @cpn.transitions[:TransmitPacket].occur
           @cpn.states[:A].marking.to_a.should be_empty
           @cpn.states[:B].marking.to_a.should be_empty
@@ -415,13 +415,13 @@ describe CPN::Net do
             end
 
             it "can occur, placing nothing on D, if the NetworkQuality is 0" do
-              @cpn.states[:NetworkQuality].marking = [ 0 ]
+              @cpn.states[:NetworkQuality].marking.set([ 0 ])
               @cpn.states[:C].marking.to_a.should == [ 2 ]
               @cpn.states[:D].marking.to_a.should be_empty
 
               @cpn.transitions[:TransmitAck].occur
 
-              @cpn.states[:NetworkQuality].marking = [ 0 ]
+              @cpn.states[:NetworkQuality].marking.set([ 0 ])
               @cpn.states[:C].marking.to_a.should be_empty
               @cpn.states[:D].marking.to_a.should be_empty
             end

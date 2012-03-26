@@ -222,16 +222,14 @@ describe "HS timed CPN::Net" do
     context "activity monitoring" do
 
       describe "when monitoring the entire net and occurring once" do
-        it "should report tick, before_fire, 5 token removed, 5 token added, then after_fire" do
+        it "should report tick, before_fire, 7 stated changed, then after_fire" do
           expected = [
             { :tick => [ "Top" ] },
             { :before_fire => [ "Top::StartRamp::Move" ] },
-            { :token_removed => [
-              "Top::Waiting", "Top::StartRamp::In", "Top::OnRamp1Count", 
-              "Top::StartRamp::OutCount", "Top::Move1::InCount" ] },
-            { :token_added => [
-              "Top::OnRamp1", "Top::StartRamp::Out", "Top::OnRamp1Count", 
-              "Top::StartRamp::OutCount", "Top::Move1::InCount" ] },
+            { :state_changed => [
+              "Top::Waiting", "Top::Move1::In", "Top::StartRamp::In", "Top::OnRamp1Count", 
+              "Top::StartRamp::OutCount", "Top::Move1::InCount",
+              "Top::OnRamp1", "Top::StartRamp::Out" ] },
             { :after_fire => [ "Top::StartRamp::Move" ] }
           ]
           @cpn.on(CPN::ALL_EVENTS) do |node, op|

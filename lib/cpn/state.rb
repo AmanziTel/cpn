@@ -2,7 +2,7 @@ require File.expand_path("#{File.dirname __FILE__}/node")
 
 module CPN
   class State < Node
-    attr_accessor :marking
+    attr_reader :marking
 
     def initialize(name)
       super
@@ -47,7 +47,7 @@ module CPN
     private
 
     def listen_to_marking
-      @marking.on([ :token_added, :token_removed ]) do |source, op|
+      @marking.on(:updated) do |source, op|
         @container.fire_state_changed(self, op) if @container
       end
     end
