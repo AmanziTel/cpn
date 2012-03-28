@@ -144,14 +144,14 @@ module CPN
     end
 
     def reset
-      each_state do |s|
-        s.reset
-      end
       each_transition do |t|
         t.reset if t.respond_to? :reset
       end
+      each_state do |s|
+        s.reset
+      end
     end
- 
+
     def to_s
       "Page: #{@name} " +
       "States #{@states.values.map(&:to_s).join(',')} " +

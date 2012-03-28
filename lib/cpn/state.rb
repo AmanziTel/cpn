@@ -3,6 +3,7 @@ require File.expand_path("#{File.dirname __FILE__}/node")
 module CPN
   class State < Node
     attr_reader :marking
+    attr_accessor :initial
 
     def initialize(name)
       super
@@ -41,6 +42,11 @@ module CPN
       @marking.off
       source_state.marking.fuse_with(@marking)
       @marking = source_state.marking
+      if @initial.nil?
+        @initial = source_state.initial
+      elsif source_state.initial.nil?
+        source_state.initial = @initial
+      end
       listen_to_marking
     end
 

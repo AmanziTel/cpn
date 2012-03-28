@@ -214,6 +214,36 @@ describe "HS timed CPN::Net" do
                 }
               end
             end
+
+            context "then resetting" do
+              before do
+                @cpn.reset
+              end
+
+              describe "the stateset" do
+                it "should be the same as the initial stateset" do
+                  statemap(@cpn).should == {
+                    'Top::Waiting'        => [ CAR3, CAR1, CAR2 ],
+                    'Top::OnRamp1'        => [],
+                    'Top::OnRamp1Count'   => [ 0 ],
+                    'Top::Road1'          => [],
+                    'Top::Road1Count'     => [ 0 ],
+                    'Top::AtDest'         => [],
+                    'StartRamp::In'       => [ CAR3, CAR1, CAR2 ],
+                    'StartRamp::Out'      => [],
+                    'StartRamp::OutCount' => [ 0 ],
+                    'Move1::In'           => [],
+                    'Move1::Out'          => [],
+                    'Move1::InCount'      => [ 0 ],
+                    'Move1::OutCount'     => [ 0 ],
+                    'Move2::In'           => [],
+                    'Move2::Out'          => [],
+                    'Move2::InCount'      => [ 0 ],
+                    'Move2::OutCount'     => [ 0 ]
+                  }
+                end
+              end
+            end
           end
         end
       end
