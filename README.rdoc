@@ -5,7 +5,7 @@ how to create hierarchical, timed CPNs using the gem.
 
 CPNs consist of tokens, arcs, states and transitions. States and transitions have names.
 
-= Tokens
+=== Tokens
 
 A token is simply a Ruby Object. In timed nets, each token has a ready time, which is
 the time at which it's ready to participate in a transition firing. To set a ready time 
@@ -13,7 +13,7 @@ on a token, only instances of Hash and Array are supported as tokens. Other clas
 can be used as timed tokens by importing a module defining the .ready_at and .ready_at=
 methods.
 
-= Arcs
+=== Arcs
 
 An arc is a connection between a state and a transition. It either starts at the state 
 and ends at the transition, or vice-versa (it is directed). It has a Ruby expression 
@@ -23,7 +23,7 @@ transition, so let's discuss the arc expression below.
 The visual representation of an arc is an arrow with a label at its middle with the
 arc expression on it, like so: ---[a,b]--->
 
-= States
+=== States
 
 A state can hold a number of tokens, so it's pretty much just a fancy Array, unlike
 traditional CPNs which use Multisets.
@@ -37,7 +37,7 @@ The visual representation of a state is a circle. Imagine it's a bucket that hol
 the tokens. Currently, the tokens are shown to the right of the circle, in a list with
 one token per line.
 
-= Transitions
+=== Transitions
 
 A transition is like a method. It is invoked, or "fired", when certain requirements 
 are met. It has a guard expression, which is a Ruby expression that must evaluate to
