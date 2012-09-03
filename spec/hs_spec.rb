@@ -27,7 +27,7 @@ describe "HS CPN::Net" do
         end
         @cpn = CPN.build :Top do
           state :Waiting, "{ :make => 'Honda' }"
-          state :OnRamp1
+          #state :OnRamp1
           state :OnRamp1Count, "0"
           state :Road1
           state :Road1Count, "0"

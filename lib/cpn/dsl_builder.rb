@@ -9,15 +9,20 @@ module CPN
   # build a network (time based model) using the DSL methods page,
   # state, transition and arc.
   class DSLBuilder
-    attr_accessor :resolver
 
     def initialize(page)
       @page = page
+      @page.builder = self
     end
 
-    def self.build_net(name, &block)
-      builder = DSLBuilder.new(Net.new(name))
-      builder.instance_eval &block
+    def self.build_net(name, path = nil, &block)
+      net = Net.new(name)
+      builder = DSLBuilder.new(net)
+      if path = builder.clean_path(path)
+        net.path = path
+        builder.instance_eval(File.read(path))
+      end
+      builder.instance_eval &block if(block_given?)
       builder.result
     end
 
@@ -25,14 +30,24 @@ module CPN
       @page
     end
 
+    def clean_path(path)
+      if path
+        if path =~ /^\//
+          "public/library/#{path}"
+        elsif @page.path.nil?
+          path
+        else
+          "#{File.dirname(@page.path)}/#{path}"
+        end
+      else
+        nil
+      end
+    end
+
     def page(name, path = nil, &block)
       p = Page.new(name, @page)
       builder = DSLBuilder.new(p)
-      if path
-        path =
-          (path =~ /^\// || @page.path.nil?) ?
-          "public/library/#{path}" :
-          "#{File.dirname(@page.path)}/#{path}"
+      if path = clean_path(path)
         p.path = path
         builder.instance_eval(File.read(path))
       end
@@ -56,6 +71,7 @@ module CPN
 
     def hs_transition(name, &block)
       subpage = Page.new(name, @page)
+      subpage.builder = self
       subpage.instance_eval &block if block_given?
       @page.add_transition(subpage)
     end

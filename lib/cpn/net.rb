@@ -8,7 +8,7 @@ module CPN
   class Page < Node
     include CPN::Observable
     attr_reader :states, :transitions, :arcs, :pages, :fuse_arcs, :prototype
-    attr_accessor :path
+    attr_accessor :path, :builder
 
     event_source *CPN::ALL_EVENTS
 
@@ -34,15 +34,18 @@ module CPN
     def add_state(state)
       @states[state.name] = state
       state.container = self
+      state
     end
 
     def add_transition(transition)
       @transitions[transition.name] = transition
       transition.container = self
+      transition
     end
 
     def add_arc(arc)
       @arcs << arc
+      arc
     end
 
     def add_fuse_arc(state, hs_transition)
@@ -50,11 +53,13 @@ module CPN
         :state => state,
         :hs_transition => hs_transition
       }
-     end
+      @fuse_arcs[-1]
+    end
 
     def add_page(page)
       @pages[page.name] = page
       raise "Page does not belong here" unless page.container == self
+      page
     end
 
     def each_transition
@@ -94,7 +99,7 @@ module CPN
     end
 
     def fuse(superstate_name, substate_name)
-      superstate = @container.states[superstate_name]
+      superstate = @container.states[superstate_name] ||= builder.state(superstate_name)
       raise "Superstate '#{superstate_name}' not found" unless superstate
       @states[substate_name].fuse_with(superstate)
       @container.add_fuse_arc(superstate, self)
@@ -102,9 +107,10 @@ module CPN
 
     def prototype=(prototype)
       raise "No prototype given" unless prototype
-      if prototype.kind_of? Hash
-        raise "No resolver given" unless @resolver
-        @prototype = @resolver.resolve(prototype)
+      if prototype.kind_of? Page
+        @prototype = prototype
+      elsif prototype.kind_of? Hash
+        @prototype = builder.page prototype[:name], prototype[:path]
       else
         @prototype = @container.pages[prototype]
       end
