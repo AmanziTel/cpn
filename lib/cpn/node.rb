@@ -1,4 +1,8 @@
 module CPN
+
+  # This is the basic unit of a CPN. The Node has a name,
+  # properties and incoming/outgoing connections. Pages
+  # contain and extend Node, allowing for nesting of subnets.
   class Node
     attr_accessor :name, :container
     attr_accessor :incoming, :outgoing
@@ -11,9 +15,7 @@ module CPN
     end
 
     def qname
-      qn = name.to_s
-      qn = "#{@container.qname}::#{qn}" if @container
-      qn
+      [container && container.qname, name].compact.join("::")
     end
 
     def net

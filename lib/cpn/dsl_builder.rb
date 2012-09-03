@@ -4,6 +4,10 @@ require File.expand_path("#{File.dirname __FILE__}/marking")
 
 module CPN
 
+  # This class is the starting point for the Ruby DSL used to build
+  # CPN models. The method CPN::DSLBuilder.build_net can be used to 
+  # build a network (time based model) using the DSL methods page,
+  # state, transition and arc.
   class DSLBuilder
     attr_accessor :resolver
 
@@ -21,10 +25,18 @@ module CPN
       @page
     end
 
-    def page(name, &block)
+    def page(name, path = nil, &block)
       p = Page.new(name, @page)
       builder = DSLBuilder.new(p)
-      builder.instance_eval &block
+      if path
+        path =
+          (path =~ /^\// || @page.path.nil?) ?
+          "public/library/#{path}" :
+          "#{File.dirname(@page.path)}/#{path}"
+        p.path = path
+        builder.instance_eval(File.read(path))
+      end
+      builder.instance_eval(&block) if(block_given?)
 
       @page.add_page(p)
     end

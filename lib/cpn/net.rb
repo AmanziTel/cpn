@@ -1,21 +1,14 @@
 require File.expand_path("#{File.dirname __FILE__}/transition")
 require File.expand_path("#{File.dirname __FILE__}/state")
-require File.expand_path("#{File.dirname __FILE__}/dsl_builder")
-require File.expand_path("#{File.dirname __FILE__}/json_builder")
 
 module CPN
 
-  def self.build(name, &block)
-    DSLBuilder.build_net(name, &block)
-  end
-
-  def self.build_json(name, json)
-    JSONBuilder.build_net(name, json)
-  end
-
+  # A page is a sub-network. It is a valid CPN in its own right,
+  # but might also be a component of a larger network.
   class Page < Node
     include CPN::Observable
     attr_reader :states, :transitions, :arcs, :pages, :fuse_arcs, :prototype
+    attr_accessor :path
 
     event_source *CPN::ALL_EVENTS
 
@@ -161,6 +154,10 @@ module CPN
 
   end
 
+  # A Net is a CPN::Page that includes the concept of time. This is used for
+  # CPN's that involve time based simulations. This could include modeling the
+  # flow of resources across a physical or virtual network, or modeling the
+  # time-ordered logic of a contingency plan, or decision sequence.
   class Net < Page
     attr_reader :time
 
