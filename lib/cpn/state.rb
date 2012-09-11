@@ -28,6 +28,13 @@ module CPN
       @marking << token
     end
 
+    def to_hash
+      super.merge(
+        :marking => marking.to_hash,
+        :initial => initial
+      )
+    end
+
     def to_s
       s = "(#{@name})"
       s << "{#{@marking.map(&:inspect).join(',')}}" unless @marking.empty?

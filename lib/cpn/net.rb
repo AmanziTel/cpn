@@ -21,6 +21,17 @@ module CPN
       @fuse_arcs = []
     end
 
+    def h2h(h)
+      a2h(h.to_a.map{|v| v[1]},true)
+    end
+
+    def to_hash
+      super.merge(
+        :states => h2h(states),
+        :transitions => h2h(transitions)
+      )
+    end
+
     def fire_transition_fired(t, op)
       fire(op, t)
       container.fire_transition_fired(t, op) if container

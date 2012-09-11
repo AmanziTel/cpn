@@ -1,4 +1,7 @@
 module CPN
+
+  # The Arc connects two nodes together, a state and a transition.
+  # The optional expression is evaluated on entering the transition.
   class Arc
     attr_accessor :from, :to, :expr
 
@@ -31,6 +34,11 @@ module CPN
 
     def add_token(token)
       @to.add_token(token)
+    end
+
+    # This is used for building a data structure representable in JSON in the REST API
+    def to_hash
+      {:from => from.to_s, :to => to.to_s, :expr => expr.to_s }
     end
 
   end

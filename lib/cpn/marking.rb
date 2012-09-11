@@ -41,6 +41,10 @@ module CPN
       end
     end
 
+    def to_hash
+      @tokens
+    end
+
     def to_s
       @tokens.to_s
     end

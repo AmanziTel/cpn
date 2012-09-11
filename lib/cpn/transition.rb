@@ -52,6 +52,10 @@ module CPN
       [ distances.min, 0].max if distances.length > 0
     end
 
+    def to_hash
+      super.merge(:guard => guard)
+    end
+
     def to_s
       "|#{@name}|"
     end
@@ -85,6 +89,7 @@ module CPN
       end
       min_combos
     end
+
   end
 
   class ArcTokenBinding
@@ -103,6 +108,10 @@ module CPN
 
     def self.all_for_arc(arc)
       arc.tokens.map{ |t| ArcTokenBinding.new(arc, t) }
+    end
+
+    def to_hash
+      {:token => @token.to_s, :arc => @arc.to_s, :binding => @binding.to_s}
     end
 
     # Return all combinations of arc, token for each arc
