@@ -63,6 +63,20 @@ module CPN
       @page.add_state(state)
     end
 
+    def layout(map={})
+      map.each do |name,p|
+        if s = @page.states[name.to_s.intern]
+          s.properties[:x] = p[:x]
+          s.properties[:y] = p[:y]
+        elsif t = @page.transitions[name.to_s.intern]
+          t.properties[:x] = p[:x]
+          t.properties[:y] = p[:y]
+        else
+          puts "State not found: #{name}"
+        end
+      end
+    end
+
     def transition(name, &block)
       t = Transition.new name
       t.instance_eval &block if block_given?
