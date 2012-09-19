@@ -45,6 +45,7 @@ module CPN
     end
 
     def page(name, path = nil, &block)
+      name = name.to_s.intern
       p = Page.new(name, @page)
       builder = DSLBuilder.new(p)
       if path = clean_path(path)
@@ -57,18 +58,23 @@ module CPN
     end
 
     def state(name, init = nil, &block)
+      puts "Creating new state with name '#{name}' and initialization '#{init}'"
+      name = name.to_s.intern
       state = State.new name
       state.initial = init unless init.nil?
       state.instance_eval &block if block_given?
+      state.initial.network = @page.net if(state.initial.respond_to? :network=)
+      puts "Created state: #{state.inspect}"
       @page.add_state(state)
     end
 
     def layout(map={})
       map.each do |name,p|
-        if s = @page.states[name.to_s.intern]
+        name = name.to_s.intern
+        if s = @page.states[name]
           s.properties[:x] = p[:x]
           s.properties[:y] = p[:y]
-        elsif t = @page.transitions[name.to_s.intern]
+        elsif t = @page.transitions[name]
           t.properties[:x] = p[:x]
           t.properties[:y] = p[:y]
         else
@@ -78,12 +84,14 @@ module CPN
     end
 
     def transition(name, &block)
+      name = name.to_s.intern
       t = Transition.new name
       t.instance_eval &block if block_given?
       @page.add_transition(t)
     end
 
     def hs_transition(name, &block)
+      name = name.to_s.intern
       subpage = Page.new(name, @page)
       subpage.builder = self
       subpage.instance_eval &block if block_given?
@@ -91,6 +99,8 @@ module CPN
     end
 
     def arc(from, to, expr = nil, &block)
+      from = from.to_s.intern
+      to = to.to_s.intern
       if @page.states.has_key?(from) && @page.transitions.has_key?(to)
         from, to = @page.states[from], @page.transitions[to]
       elsif @page.transitions.has_key?(from) && @page.states.has_key?(to)

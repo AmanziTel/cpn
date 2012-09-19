@@ -21,6 +21,10 @@ module CPN
       @fuse_arcs = []
     end
 
+    def net
+      @container && @container.net
+    end
+
     def h2h(h)
       a2h(h.to_a.map{|v| v[1]},true)
     end
