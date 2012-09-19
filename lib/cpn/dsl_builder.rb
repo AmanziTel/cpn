@@ -58,13 +58,13 @@ module CPN
     end
 
     def state(name, init = nil, &block)
-      puts "Creating new state with name '#{name}' and initialization '#{init}'"
+      puts "Creating new state with name '#{name}' and initialization '#{init}'" if($debug)
       name = name.to_s.intern
       state = State.new name
       state.initial = init unless init.nil?
       state.instance_eval &block if block_given?
       state.initial.network = @page.net if(state.initial.respond_to? :network=)
-      puts "Created state: #{state.inspect}"
+      puts "Created state: #{state.inspect}" if($debug)
       @page.add_state(state)
     end
 

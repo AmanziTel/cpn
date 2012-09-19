@@ -26,7 +26,7 @@ module CPN
   # availability on the enclosing array.
   module TimedAvailability
     def ready_at(t)
-      puts "Setting token availability #{self}@#{t}"
+      puts "Setting token availability #{self}@#{t}" if($debug)
       @cpn_available = t
       self
     end

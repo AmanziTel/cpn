@@ -10,11 +10,13 @@ module CPN
     end
 
     def ready?
-      $debug = true
-      puts "Checking if transition '#{name}' is ready"
+      #$debug = true
       d = min_distance_to_valid_combo
-      puts "\tMin distance is #{d}"
-      puts "\tready? => #{!d.nil? && d <= 0}"
+      if $debug
+        puts "Checking if transition '#{name}' is ready"
+        puts "\tMin distance is #{d}"
+        puts "\tready? => #{!d.nil? && d <= 0}"
+      end
       !d.nil? && d <= 0
     end
 
@@ -49,6 +51,7 @@ module CPN
     end
 
     def min_distance_to_valid_combo
+      #$debug = true
       at_time = @container.net.time
       puts "\tAt Time: #{at_time}" if($debug)
       distances = valid_arc_token_combinations.map do |arc_tokens|
@@ -112,11 +115,13 @@ module CPN
     end
 
     def ready_distance(at_time)
-      debug = true
-      if @token.respond_to?(:ready)
-        puts "\t\tChecking if the token #{@token} is ready at time #{at_time}" if($debug)
+      #$debug = true
+      if @token.respond_to?(:ready?)
         ans = (@token.ready? || at_time) - at_time
-        puts "\t\tToken.ready?=#{@token.ready?} => distance=#{ans}" if($debug)
+        if $debug
+          puts "\t\tChecking if the token #{@token} is ready at time #{at_time}"
+          puts "\t\tToken.ready?=#{@token.ready?} => distance=#{ans}"
+        end
         ans
       else
         puts "\t\tThe token #{@token} has no time capability. Always ready!" if($debug)
