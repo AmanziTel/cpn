@@ -27,6 +27,10 @@ module CPN
       @tokens << t
     end
 
+    def length
+      @tokens.length
+    end
+
     def delete(t)
       i = @tokens.index(t)
       raise "Unknown token #{t}" if i.nil?

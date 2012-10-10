@@ -114,6 +114,8 @@ module CPN
     end
 
     def fuse(superstate_name, substate_name)
+      superstate_name = superstate_name.to_s.intern
+      substate_name = substate_name.to_s.intern
       superstate = @container.states[superstate_name] ||= builder.state(superstate_name)
       raise "Superstate '#{superstate_name}' not found" unless superstate
       @states[substate_name].fuse_with(superstate)
