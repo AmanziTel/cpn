@@ -72,6 +72,19 @@ module CPN
       @page.add_page(p)
     end
 
+    def contingency(alert_state, end_state, &block)
+      if block_given?
+        plan = ContingencyPlan.new(self, alert_state, end_state)
+        plan.instance_eval(&block)
+        puts "Created contingency plan with #{plan.checks.length} checks: #{plan}"
+        plan.build_cpn
+      else
+        transition :Contingency
+        arc alert_state, :Contingency
+        arc :Contingency, end_state
+      end
+    end
+
     # Create multiple states, applying the same block to each in turn
     def states(*args, &block)
       args.each do |arg|
@@ -137,22 +150,29 @@ module CPN
     end
 
     def make_arc(from, to, options = {}, &block)
-      from = from.to_s.intern
-      to = to.to_s.intern
-      if @page.states.has_key?(from) && @page.transitions.has_key?(to)
-        from, to = @page.states[from], @page.transitions[to]
-      elsif @page.transitions.has_key?(from) && @page.states.has_key?(to)
-        from, to = @page.transitions[from], @page.states[to]
-      else
-        raise "State or transition not found: #{from} --> #{to}"
-        return
+      # Convert input fields to Nodes in the network
+      from,to = [from,to].map do |node|
+        if node.is_a? CPN::Node
+          node
+        else
+          node = @page.transitions[node.to_s.intern] || @page.states[node.to_s.intern] || raise("State or transition not found: #{node}")
+        end
       end
-      a = Arc.new(from, to)
-      a.expr = options[:expr] unless options[:expr].nil?
-      a.instance_eval &block if block_given?
-      from.outgoing << a
+      puts "Creating arc from[#{from.class}](#{from.name}) -> from[#{to.class}](#{to.name})"
+      if(
+        from.is_a?(CPN::State) && !to.is_a?(CPN::State) || 
+        to.is_a?(CPN::State) && !from.is_a?(CPN::State)
+      )
+      # Build the arc and connect to state or transition
+        a = Arc.new(from, to)
+        a.expr = options[:expr] unless options[:expr].nil?
+        a.instance_eval &block if block_given?
+        from.outgoing << a
       to.incoming << a
-      @page.add_arc(a)
+        @page.add_arc(a)
+      else
+        raise "Cannot connect two elements that are not a state and a transition: #{from.name} -> #{to.name}"
+      end
     end
 
     def arc(from, to, options = {}, &block)
@@ -163,6 +183,108 @@ module CPN
       make_arc(to, from, options, &block) if(options[:bidirectional])
     end
 
+  end  #DSLBuilder
+
+  class PlanStep
+    attr_reader :name, :plan, :options, :transition
+    def initialize(plan, name, typeName, options = {})
+      @plan = plan
+      @name = name
+      @options = options
+      @options[:duration] ||= 1
+      @transition = builder.transition "#{typeName} #{name}"
+    end
+    def builder
+      plan.builder
+    end
+    # Connect this step to another step (with intervening state)
+    # Or connect to the end_state if no next step is found
+    def connect_to(nextType, nextName)
+      if nextName && (nextStep = plan.find_step(nextName))
+        # Make an intermediate state, and connect trans->state->next
+        state = builder.state "#{name} #{nextType}"
+        state.properties[:size] = 'small'
+        state.properties[:label] = nextType
+        builder.arc transition, state, "p.ready_at(#{options[:duration].to_i})"
+        builder.arc state, nextStep.transition, 'p'
+      else
+        # Connect directly to end state, or specified state
+        next_state = plan.end_state
+        next_state = plan.alert_state if(plan.alert_state == nextName)
+        puts "Cannot find 'pass' step: #{nextName}" if(nextName)
+        builder.arc transition, next_state, "p.ready_at(#{options[:duration].to_i})"
+      end
+    end
+    def build
+      connect_to 'Next', options[:next]
+    end
+  end
+
+  class CheckStep < PlanStep
+    attr_reader :pass, :fail
+    def initialize(plan, name, options = {})
+      super(plan, name, "Check", options)
+    end
+    def build
+      ['Pass','Fail'].each do |result|
+        connect_to result, options[result.downcase.intern]
+      end
+    end
+  end
+
+  class RepairStep < PlanStep
+    def initialize(plan, name, options = {})
+      super(plan, name, 'Repair', options)
+    end
+  end
+
+  class ContingencyPlan
+    attr_reader :builder, :checks, :repairs, :alert_state, :end_state, :start_name
+    def initialize(builder, alert_state, end_state)
+      @builder = builder
+      @alert_state = alert_state
+      @end_state = end_state
+      @checks = []
+      @repairs = []
+    end
+    def start_with(name)
+      @start_name = name
+    end
+    def start
+      @start ||= @start_name && find_step(@start_name) || checks[0]
+    end
+    def check(name, options = {})
+      checks << CheckStep.new(self, name, options)
+    end
+    def repair(name, options = {})
+      repairs << RepairStep.new(self, name, options)
+    end
+    def build_steps steps
+      steps.each do |step|
+        step.build
+      end
+    end
+    def find_step name
+      unless @steps
+        @steps = {}
+        @checks.each do |step|
+          @steps[step.name] = step
+          @steps["Check #{step.name}"] = step
+        end
+        @repairs.each do |step|
+          @steps[step.name] = step
+          @steps["Repair #{step.name}"] = step
+        end
+      end
+      @steps[name]
+    end
+    def build_cpn
+      build_steps repairs
+      build_steps checks
+      if alert_state && start
+        builder.arc alert_state, start.transition, 'p'
+      end
+    end
   end
 end
 
