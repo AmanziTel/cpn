@@ -57,14 +57,23 @@ end
 
 class String
   include CPN::TimedAvailability
+  def empty?
+    self.length == 0
+  end
 end
 
 class Array
   include CPN::TimedAvailability
+  def empty?
+    self.length == 0
+  end
 end
 
 class Hash
   include CPN::TimedAvailability
+  def empty?
+    self.length == 0
+  end
 end
 
 
