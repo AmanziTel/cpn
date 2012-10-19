@@ -254,7 +254,7 @@ module CPN
       unless @token_matches
         @token_matches = {}
         options[:match] ||= options[:not]
-        @token_matches['Pass'] = options[:expr] || (options[:match] && "token =~ /#{options[:match]}/") || 'token'
+        @token_matches['Pass'] = options[:expr] || (options[:match] && "token =~ /#{options[:match]}/") || 'token.empty?'
         @token_matches['Fail'] = "!(#{token_matches['Pass']})"
         if options[:not]
           o = @token_matches['Pass']
