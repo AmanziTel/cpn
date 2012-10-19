@@ -63,10 +63,11 @@ module CPN
       arc
     end
 
-    def add_fuse_arc(state, hs_transition)
+    def add_fuse_arc(state, hs_transition, direction = :out)
       @fuse_arcs << {
         :state => state,
-        :hs_transition => hs_transition
+        :hs_transition => hs_transition,
+        :direction => direction
       }
       @fuse_arcs[-1]
     end
@@ -113,13 +114,20 @@ module CPN
       end
     end
 
-    def fuse(superstate_name, substate_name)
-      superstate_name = superstate_name.to_s.intern
-      substate_name = substate_name.to_s.intern
-      superstate = @container.states[superstate_name] ||= builder.state(superstate_name)
-      raise "Superstate '#{superstate_name}' not found" unless superstate
-      @states[substate_name].fuse_with(superstate)
-      @container.add_fuse_arc(superstate, self)
+    def fuse(*states)
+      names = states.map do |state|
+        state.respond_to?(:name) && state.name || state.to_s.intern
+      end
+      names[1] ||= names[0]
+      superstate = @container.states[names[0]] ||= builder.state(names[0])
+      raise "Superstate '#{names[0]}' not found" unless superstate
+      substate = @states[names[1]]
+      raise "Substate '#{names[1]}' not found" unless substate
+      substate.fuse_with(superstate)
+      outgoing = transitions.values.detect do |t|
+        arc_between(t.name,substate.name)
+      end
+      @container.add_fuse_arc(superstate, self, outgoing ? :out : :in)
     end
 
     def prototype=(prototype)
@@ -129,9 +137,9 @@ module CPN
       elsif prototype.kind_of? Hash
         @prototype = builder.page prototype[:name], prototype[:path]
       else
-        @prototype = @container.pages[prototype]
+        @prototype = @container.pages[prototype.to_s.intern]
       end
-      raise "Unable to resolve prototype" unless @prototype
+      raise "Unable to resolve prototype '#{prototype}'" unless @prototype
       @prototype.each_state do |s|
         s = s.clone
         s.incoming, s.outgoing = [], []

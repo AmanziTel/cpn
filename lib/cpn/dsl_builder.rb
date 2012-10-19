@@ -55,34 +55,27 @@ module CPN
       p = Page.new(name, @page)
       builder = DSLBuilder.new(p)
       # Parent params pass to child, but overridden by command-line params (in child only)
-      puts "Parent params: #{self.params.inspect}"
-      puts "CMD params: #{cmd_params.inspect}"
+      puts "Parent params: #{self.params.inspect}" if($debug)
+      puts "CMD params: #{cmd_params.inspect}" if($debug)
       builder.params.merge!(self.params).merge!(cmd_params)
-      puts "Child params: #{builder.params.inspect}"
+      puts "Child params: #{builder.params.inspect}" if($debug)
       if path = clean_path(path)
         p.path = path
-        puts "Loading page using builder: #{builder}"
+        puts "Loading page using builder: #{builder}" if($debug)
         builder.instance_eval(File.read(path))
-        puts "Child params after loading #{path}: #{builder.params.inspect}"
+        puts "Child params after loading #{path}: #{builder.params.inspect}" if($debug)
       end
       builder.instance_eval(&block) if(block_given?)
-      puts "Child params after block: #{builder.params.inspect}"
-      puts "Time increment: #{params[:event_time_incr]}"
+      puts "Child params after block: #{builder.params.inspect}" if($debug)
 
       @page.add_page(p)
     end
 
     def contingency(alert_state, end_state, &block)
-      if block_given?
-        plan = ContingencyPlan.new(self, alert_state, end_state)
-        plan.instance_eval(&block)
-        puts "Created contingency plan with #{plan.checks.length} checks: #{plan}"
-        plan.build_cpn
-      else
-        transition :Contingency
-        arc alert_state, :Contingency
-        arc :Contingency, end_state
-      end
+      plan = ContingencyPlan.new(self, alert_state, end_state)
+      plan.instance_eval(&block) if(block_given?)
+      puts "Created contingency plan with #{plan.checks.length} checks: #{plan}"
+      plan.build_cpn
     end
 
     # Create multiple states, applying the same block to each in turn
@@ -186,49 +179,133 @@ module CPN
   end  #DSLBuilder
 
   class PlanStep
-    attr_reader :name, :plan, :options, :transition
-    def initialize(plan, name, typeName, options = {})
+    attr_reader :name, :type_name, :plan, :options, :transition, :transition_name
+    attr_accessor :input_state
+    def initialize(plan, name, type_name, options = {})
       @plan = plan
       @name = name
+      @type_name = type_name
       @options = options
       @options[:duration] ||= 1
-      @transition = builder.transition "#{typeName} #{name}"
+      @transition_name = "#{type_name} #{name}"
     end
     def builder
       plan.builder
     end
+    def transition
+      @transition ||= builder.transition transition_name
+    end
     # Connect this step to another step (with intervening state)
     # Or connect to the end_state if no next step is found
-    def connect_to(nextType, nextName)
+    def next_state(nextType, nextName)
+      next_state = nil
       if nextName && (nextStep = plan.find_step(nextName))
         # Make an intermediate state, and connect trans->state->next
-        state = builder.state "#{name} #{nextType}"
-        state.properties[:size] = 'small'
-        state.properties[:label] = nextType
-        builder.arc transition, state, "p.ready_at(#{options[:duration].to_i})"
-        builder.arc state, nextStep.transition, 'p'
+        next_state = nextStep.input_state
+        if next_state
+          puts "\tUsing existing output state '#{next_state}' for '#{self}'"
+        else
+          puts "\tMaking new output state '#{name} #{nextType}' for '#{self}'"
+          next_state = builder.state "#{name} #{nextType}"
+          next_state.properties[:size] = 'small'
+          next_state.properties[:label] = nextType
+          nextStep.input_state = next_state
+        end
       else
+        puts "Cannot find '#{nextType}' step: #{nextName}" if(nextName)
         # Connect directly to end state, or specified state
         next_state = plan.end_state
         next_state = plan.alert_state if(plan.alert_state == nextName)
-        puts "Cannot find 'pass' step: #{nextName}" if(nextName)
-        builder.arc transition, next_state, "p.ready_at(#{options[:duration].to_i})"
       end
+      next_state
+    end
+    def input_state=(input_state)
+      if @input_state
+        puts "Trying to change input state from '#{@input_state}' to '#{input_state}'" if(@input_state != input_state)
+      else
+        @input_state = input_state
+        builder.arc input_state, transition, 'p'
+      end
+      @input_state
+    end
+    def arc_expression
+      expression = 'p'
+      expression = "\"#{options[:prefix]} #\{#{expression}\}\"" if(options[:prefix])
+      expression = "[#{expression}]. reject{|v| v=~/#{options[:reject]}/}" if(options[:reject])
+      expression += ". ready_at(#{options[:duration].to_i})" if(options[:duration])
+      expression
     end
     def build
-      connect_to 'Next', options[:next]
+      builder.arc transition, next_state('Next',options[:next]), arc_expression
+    end
+    def to_s
+      "#{type_name}Step[#{name}]: #{options.inspect}"
     end
   end
 
   class CheckStep < PlanStep
-    attr_reader :pass, :fail
+    attr_reader :pass, :fail, :template
     def initialize(plan, name, options = {})
       super(plan, name, "Check", options)
+      @transition_name = name
+      @template = "Check #{name}"
+    end
+    def token_matches
+      unless @token_matches
+        @token_matches = {}
+        options[:match] ||= options[:not]
+        @token_matches['Pass'] = options[:expr] || (options[:match] && "token =~ /#{options[:match]}/") || 'token'
+        @token_matches['Fail'] = "!(#{token_matches['Pass']})"
+        if options[:not]
+          o = @token_matches['Pass']
+          @token_matches['Pass'] = @token_matches['Fail']
+          @token_matches['Fail'] = o
+        end
+      end
+      @token_matches
+    end
+    def token_matches_keys
+      # Return ['Pass','Fail'] in that order
+      token_matches.keys.sort.reverse
+    end
+    def token_matches_values
+      token_matches_keys.map {|k| @token_matches[k]}
+    end
+    def input_state=(input_state)
+      if @input_state
+        puts "Trying to change input state from '#{@input_state}' to '#{input_state}'" if(@input_state != input_state)
+      else
+        @input_state = input_state
+        puts "\tFusing starting state '#{input_state}' with :Input for '#{self}'"
+        transition.fuse input_state, template
+      end
+      @input_state
+    end
+    def transition
+      unless @transition
+        # Create the transition as a sub-page
+        @transition = builder.hs_transition transition_name
+
+        # Make the template and then create the transition based on it
+        puts "Making transition '#{name}' using component in prototype '#{template}'"
+        builder.page template, "/nets/IT/Components/TokenMatchSwitch.rb",
+          :token_match_expressions => token_matches_values,
+          :token_match_transitions => token_matches_keys.map{|k| "#{k} It"},
+          :token_match_states => token_matches_keys,
+          :token_match_input => template
+        @transition.prototype = template
+      end
+      @transition
     end
     def build
-      ['Pass','Fail'].each do |result|
-        connect_to result, options[result.downcase.intern]
+      token_matches_keys.each_with_index do |match,index|
+        next_state = next_state(match,options[match.downcase.intern])
+        puts "\tFusing ending state '#{next_state}' with '#{match}'"
+        transition.fuse next_state, match
       end
+      #['Pass','Fail'].each do |result|
+      #  connect_to result, options[result.downcase.intern]
+      #end
     end
   end
 
@@ -246,6 +323,7 @@ module CPN
       @end_state = end_state
       @checks = []
       @repairs = []
+#      builder.page :ContingencyPlanCheck, "/nets/IT/Components/TokenMatchSwitch.rb", :token_match => token_matches
     end
     def start_with(name)
       @start_name = name
@@ -258,11 +336,6 @@ module CPN
     end
     def repair(name, options = {})
       repairs << RepairStep.new(self, name, options)
-    end
-    def build_steps steps
-      steps.each do |step|
-        step.build
-      end
     end
     def find_step name
       unless @steps
@@ -279,10 +352,30 @@ module CPN
       @steps[name]
     end
     def build_cpn
-      build_steps repairs
-      build_steps checks
-      if alert_state && start
-        builder.arc alert_state, start.transition, 'p'
+      if start
+        puts "Setting first alert state '#{alert_state}' to first check: #{start}"
+        if alert_state
+          start.input_state = alert_state
+        else
+          puts "No input state specifed, cannot use this contingency plan"
+        end
+        [repairs,checks].each do |steps|
+           puts "Building #{steps.length} Steps: #{steps.join(', ')}"
+          steps.each do |step|
+            step.build
+          end
+        end
+      else
+        # We have a blank contingency plan, just connect back with a transition
+        builder.transition :Contingency
+        arc :Contingency, end_state
+        if alert_state
+          builder.arc alert_state, :Contingency
+        else
+          puts "No input state specifed, cannot use this contingency plan"
+        end
+        end_state ||= builder.state :EndState
+        builder.arc :Contingency, end_state
       end
     end
   end
