@@ -209,6 +209,14 @@ module CPN
           next_state = builder.state "#{name} #{nextType}"
           next_state.properties[:size] = 'small'
           next_state.properties[:label] = nextType
+          next_state.properties[:color] = case nextType.downcase.intern
+            when :pass
+              'green'
+            when :fail
+              'red'
+            else
+              'blue'
+            end
           nextStep.input_state = next_state
         end
       else
