@@ -179,7 +179,7 @@ module CPN
   end  #DSLBuilder
 
   class PlanStep
-    attr_reader :name, :type_name, :plan, :options, :transition, :transition_name
+    attr_reader :name, :type_name, :plan, :options, :transition, :transition_name, :verb
     attr_accessor :input_state
     def initialize(plan, name, type_name, options = {})
       @plan = plan
@@ -187,7 +187,8 @@ module CPN
       @type_name = type_name
       @options = options
       @options[:duration] ||= 1
-      @transition_name = "#{type_name} #{name}"
+      @verb = options[:verb] || type_name
+      @transition_name = name =~ /^#{verb}/ ? name : "#{verb} #{name}"
     end
     def builder
       plan.builder
@@ -197,8 +198,9 @@ module CPN
     end
     # Connect this step to another step (with intervening state)
     # Or connect to the end_state if no next step is found
-    def next_state(nextType, nextName)
+    def get_next_state(nextType, nextName)
       next_state = nil
+      puts "\n\n#{name} searching for next state using type[#{nextType}] and name[#{nextName}]"
       if nextName && (nextStep = plan.find_step(nextName))
         # Make an intermediate state, and connect trans->state->next
         next_state = nextStep.input_state
@@ -206,7 +208,7 @@ module CPN
           puts "\tUsing existing output state '#{next_state}' for '#{self}'"
         else
           puts "\tMaking new output state '#{name} #{nextType}' for '#{self}'"
-          next_state = builder.state "#{name} #{nextType}"
+          next_state = builder.state "#{transition_name} #{nextType}"
           next_state.properties[:size] = 'small'
           next_state.properties[:label] = nextType
           next_state.properties[:color] = case nextType.downcase.intern
@@ -219,13 +221,18 @@ module CPN
             end
           nextStep.input_state = next_state
         end
+      elsif plan.alert_state == nextName
+        puts "\tNext state is alert state: #{plan.alert_state}"
+        next_state = plan.alert_state
+      elsif nextName && (next_state = builder.result.states[nextName.intern])
+        puts "\tFound next state in external network: #{next_state}"
       else
-        puts "Cannot find '#{nextType}' step: #{nextName}" if(nextName)
-        # Connect directly to end state, or specified state
-        next_state = plan.end_state
-        next_state = plan.alert_state if(plan.alert_state == nextName)
+        puts "\tState not found anywhere, not even in external states: #{builder.result.states.keys.inspect}"
+        ss = builder.result.states[nextName]
+        puts "\tExternal states yields: #{nextName} => #{ss}"
       end
-      next_state
+      # Connect directly to end state if nothing else worked
+      next_state ||= plan.end_state
     end
     def input_state=(input_state)
       if @input_state
@@ -240,11 +247,12 @@ module CPN
       expression = 'p'
       expression = "\"#{options[:prefix]} #\{#{expression}\}\"" if(options[:prefix])
       expression = "[#{expression}]. reject{|v| v=~/#{options[:reject]}/}" if(options[:reject])
+      expression += ". #{options[:expr]}" if(options[:expr])
       expression += ". ready_at(#{options[:duration].to_i})" if(options[:duration])
       expression
     end
     def build
-      builder.arc transition, next_state('Next',options[:next]), arc_expression
+      builder.arc transition, get_next_state('Next',options[:next]), arc_expression
     end
     def to_s
       "#{type_name}Step[#{name}]: #{options.inspect}"
@@ -252,11 +260,16 @@ module CPN
   end
 
   class CheckStep < PlanStep
-    attr_reader :pass, :fail, :template
+    attr_reader :pass, :fail, :template, :next_check
     def initialize(plan, name, options = {})
       super(plan, name, "Check", options)
       @transition_name = name
       @template = "Check #{name}"
+      plan.checks[-1] && plan.checks[-1].next_check = self
+    end
+    def next_check=(check)
+      @next_check = check
+      options[:fail] ||= @next_check.name
     end
     def token_matches
       unless @token_matches
@@ -293,6 +306,7 @@ module CPN
       unless @transition
         # Create the transition as a sub-page
         @transition = builder.hs_transition transition_name
+        @transition.properties[:label] = token_matches_values[0]
 
         # Make the template and then create the transition based on it
         puts "Making transition '#{name}' using component in prototype '#{template}'"
@@ -307,7 +321,7 @@ module CPN
     end
     def build
       token_matches_keys.each_with_index do |match,index|
-        next_state = next_state(match,options[match.downcase.intern])
+        next_state = get_next_state(match,options[match.downcase.intern])
         puts "\tFusing ending state '#{next_state}' with '#{match}'"
         transition.fuse next_state, match
       end
