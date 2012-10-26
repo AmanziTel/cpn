@@ -5,8 +5,8 @@ require "cpn/version"
 Gem::Specification.new do |s|
   s.name        = "cpn"
   s.version     = CPN::VERSION
-  s.authors     = ["Steen Lehmann"]
-  s.email       = ["steen.lehmann@gmail.com"]
+  s.authors     = ["Steen Lehmann", "Craig Taverner"]
+  s.email       = ["steen.lehmann@gmail.com", "craig@amanzi.com"]
   s.homepage    = ""
   s.summary     = %q{Coloured Petri Nets for Ruby}
   s.description = %q{Coloured Petri Net implementation for Ruby}
@@ -20,5 +20,7 @@ Gem::Specification.new do |s|
 
   # specify any dependencies here; for example:
   s.add_development_dependency "rspec"
+  s.add_development_dependency "rake"
   # s.add_runtime_dependency "rest-client"
 end
+
