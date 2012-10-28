@@ -390,14 +390,13 @@ module CPN
       else
         # We have a blank contingency plan, just connect back with a transition
         builder.transition :Contingency
-        arc :Contingency, end_state
         if alert_state
           builder.arc alert_state, :Contingency
         else
           puts "No input state specifed, cannot use this contingency plan"
         end
-        end_state ||= builder.state :EndState
-        builder.arc :Contingency, end_state
+        @end_state ||= builder.state :EndState
+        builder.arc :Contingency, @end_state
       end
     end
   end
