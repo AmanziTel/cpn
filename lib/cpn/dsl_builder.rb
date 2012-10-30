@@ -71,8 +71,11 @@ module CPN
       @page.add_page(p)
     end
 
-    def contingency(alert_state, end_state, &block)
+    def contingency(alert_state, end_state, path = nil, &block)
       plan = ContingencyPlan.new(self, alert_state, end_state)
+      if path = self.clean_path(path)
+        plan.instance_eval(File.read(path))
+      end
       plan.instance_eval(&block) if(block_given?)
       puts "Created contingency plan with #{plan.checks.length} checks: #{plan}"
       plan.build_cpn
@@ -99,17 +102,35 @@ module CPN
       @page.add_state(state)
     end
 
+    def find_node(name)
+      name = name.to_s.intern
+      @page.states[name] || @page.transitions[name] || puts("State not found: #{name}")
+    end
+
+    def offset_position(position, origin)
+      [:x, :y].each do |k|
+        position[k] += origin[k].to_i if(position[k])
+      end
+      position
+    end
+
     def layout(map={})
+      puts "\n\nLAYOUT: #{map.inspect}\n\n"
+      origin = {:x => 0, :y => 0}
+      if map[:origin]
+        if map[:origin][:node] && origin_node = find_node(map[:origin][:node])
+          puts "Setting origin to #{origin_node.properties}"
+          offset_position(origin,origin_node.properties)
+        end
+        [:x, :y].each do |k|
+          origin[k] = map[:origin][k].to_i if(map[:origin][k])
+        end
+      end
       map.each do |name,p|
-        name = name.to_s.intern
-        if s = @page.states[name]
-          s.properties[:x] = p[:x] if(p[:x])
-          s.properties[:y] = p[:y] if(p[:y])
-        elsif t = @page.transitions[name]
-          t.properties[:x] = p[:x] if(p[:x])
-          t.properties[:y] = p[:y] if(p[:y])
-        else
-          puts "State not found: #{name}"
+        if node = find_node(name)
+          [:x, :y].each do |k|
+            node.properties[k] = p[k] + origin[k] if(p[k])
+          end
         end
       end
     end
@@ -179,9 +200,9 @@ module CPN
   end  #DSLBuilder
 
   class PlanStep
-    attr_reader :name, :type_name, :plan, :options, :transition, :transition_name, :verb
+    attr_reader :name, :type_name, :plan, :options, :transition, :transition_name, :verb, :next_step
     attr_accessor :input_state
-    def initialize(plan, name, type_name, options = {})
+    def initialize(plan, name, prev_step, type_name, options = {})
       @plan = plan
       @name = name
       @type_name = type_name
@@ -189,9 +210,14 @@ module CPN
       @options[:duration] ||= 1
       @verb = options[:verb] || type_name
       @transition_name = name =~ /^#{verb}/ ? name : "#{verb} #{name}"
+      prev_step && prev_step.next_step = self
     end
     def builder
       plan.builder
+    end
+    def next_step=(step)
+      @next_step = step
+      options[:next] ||= @next_step.transition_name
     end
     def transition
       @transition ||= builder.transition transition_name
@@ -226,7 +252,7 @@ module CPN
         next_state = plan.alert_state
       elsif nextName && (next_state = builder.result.states[nextName.intern])
         puts "\tFound next state in external network: #{next_state}"
-      else
+      elsif nextName
         puts "\tState not found anywhere, not even in external states: #{builder.result.states.keys.inspect}"
         ss = builder.result.states[nextName]
         puts "\tExternal states yields: #{nextName} => #{ss}"
@@ -260,16 +286,15 @@ module CPN
   end
 
   class CheckStep < PlanStep
-    attr_reader :pass, :fail, :template, :next_check
-    def initialize(plan, name, options = {})
-      super(plan, name, "Check", options)
+    attr_reader :pass, :fail, :template
+    def initialize(plan, name, prev_step, options = {})
+      super(plan, name, prev_step, "Check", options)
       @transition_name = name
       @template = "Check #{name}"
-      plan.checks[-1] && plan.checks[-1].next_check = self
     end
-    def next_check=(check)
-      @next_check = check
-      options[:fail] ||= @next_check.name
+    def next_step=(step)
+      @next_step = step
+      options[:fail] ||= @next_step.transition_name
     end
     def token_matches
       unless @token_matches
@@ -325,15 +350,12 @@ module CPN
         puts "\tFusing ending state '#{next_state}' with '#{match}'"
         transition.fuse next_state, match
       end
-      #['Pass','Fail'].each do |result|
-      #  connect_to result, options[result.downcase.intern]
-      #end
     end
   end
 
   class RepairStep < PlanStep
-    def initialize(plan, name, options = {})
-      super(plan, name, 'Repair', options)
+    def initialize(plan, name, prev_step, options = {})
+      super(plan, name, prev_step, 'Repair', options)
     end
   end
 
@@ -345,7 +367,7 @@ module CPN
       @end_state = end_state
       @checks = []
       @repairs = []
-#      builder.page :ContingencyPlanCheck, "/nets/IT/Components/TokenMatchSwitch.rb", :token_match => token_matches
+      @layout_map = {}
     end
     def start_with(name)
       @start_name = name
@@ -354,50 +376,63 @@ module CPN
       @start ||= @start_name && find_step(@start_name) || checks[0]
     end
     def check(name, options = {})
-      checks << CheckStep.new(self, name, options)
+      @step = CheckStep.new(self, name, @step, options)
+      checks << @step
     end
     def repair(name, options = {})
-      repairs << RepairStep.new(self, name, options)
+      @step = RepairStep.new(self, name, @step, options)
+      repairs << @step
+    end
+    def layout(map={})
+      @layout_map.merge! map
     end
     def find_step name
       unless @steps
         @steps = {}
-        @checks.each do |step|
+        [@checks,@repairs].flatten.each do |step|
           @steps[step.name] = step
-          @steps["Check #{step.name}"] = step
-        end
-        @repairs.each do |step|
-          @steps[step.name] = step
-          @steps["Repair #{step.name}"] = step
+          @steps[step.transition_name] = step
+          @steps["#{step.type_name} #{step.name}"] = step
         end
       end
       @steps[name]
     end
-    def build_cpn
-      if start
-        puts "Setting first alert state '#{alert_state}' to first check: #{start}"
-        if alert_state
-          start.input_state = alert_state
-        else
-          puts "No input state specifed, cannot use this contingency plan"
-        end
-        [repairs,checks].each do |steps|
-           puts "Building #{steps.length} Steps: #{steps.join(', ')}"
-          steps.each do |step|
-            step.build
-          end
-        end
-      else
-        # We have a blank contingency plan, just connect back with a transition
-        builder.transition :Contingency
-        if alert_state
-          builder.arc alert_state, :Contingency
-        else
-          puts "No input state specifed, cannot use this contingency plan"
-        end
-        @end_state ||= builder.state :EndState
-        builder.arc :Contingency, @end_state
+    def fill_layout(steps, offset = {:x => 0, :y => 100})
+      @prev_position ||= {:x => 0, :y => 0}
+      steps.each do |step|
+        puts "Setting layout position for #{step.transition_name}"
+        puts "\tPrevious position: #{@prev_position.inspect}"
+        puts "\tCurrent position: #{@layout_map[step.transition_name].inspect}"
+        @layout_map[step.transition_name] ||= {}
+        @layout_map[step.transition_name][:x] ||= @prev_position[:x] + offset[:x].to_i
+        @layout_map[step.transition_name][:y] ||= @prev_position[:y] + offset[:y].to_i
+        @prev_position = @layout_map[step.transition_name].clone
+        puts "\tNew position: #{@layout_map[step.transition_name].inspect}"
+        puts "\tNext previous position: #{@prev_position.inspect}"
       end
+    end
+    def build_cpn
+      check :It unless(checks.length > 0)
+      repair :It unless(repairs.length > 0)
+      puts "Setting first alert state '#{alert_state}' to first check: #{start}"
+      start.input_state = alert_state
+      [repairs,checks].each do |steps|
+        puts "Building #{steps.length} Steps: #{steps.join(', ')}"
+        steps.each do |step|
+          step.build
+        end
+      end
+      puts "\n\nLAYOUT1: #{@layout_map.inspect}\n\n"
+      fill_layout(checks)
+      @prev_position[:x] += 200
+      @prev_position[:y] += 100
+      fill_layout(repairs, :y => -100)
+      puts "\n\nLAYOUT2: #{@layout_map.inspect}\n\n"
+      if alert_state
+        @layout_map[:origin] ||= {}
+        @layout_map[:origin][:node] ||= alert_state
+      end
+      builder.layout @layout_map
     end
   end
 end
