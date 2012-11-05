@@ -1,4 +1,5 @@
 require File.expand_path("#{File.dirname __FILE__}/dsl_builder")
+require File.expand_path("#{File.dirname __FILE__}/cplan")
 require File.expand_path("#{File.dirname __FILE__}/json_builder")
 
 module CPN

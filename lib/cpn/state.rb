@@ -20,12 +20,14 @@ module CPN
       @marking.empty?
     end
 
-    def remove_token(token)
+    def remove_token(token, modify_initial = false)
       @marking.delete(token)
+      @initial = @marking.as_json.join(', ') if(modify_initial)
     end
 
-    def add_token(token)
+    def add_token(token, modify_initial = false)
       @marking << token
+      @initial = @marking.as_json.join(', ') if(modify_initial)
     end
 
     def to_hash
@@ -37,12 +39,12 @@ module CPN
 
     def to_s
       s = "(#{@name})"
-      s << "{#{@marking.map(&:inspect).join(',')}}" unless @marking.empty?
+      s << "{#{@marking.as_json.join(',')}}" unless @marking.empty?
       s
     end
 
     def reset
-      @marking.set(eval("[ #{@initial} ]"))
+      @marking.set(eval("[ #{@initial && @initial.to_s.gsub(/\@(\d+)/,'.ready_at(\1)')} ]"))
     end
 
     def fuse_with(source_state)
@@ -64,5 +66,8 @@ module CPN
         @container.fire_state_changed(self, op) if @container
       end
     end
+
   end
+
 end
+

@@ -43,6 +43,13 @@ module CPN
     def ready?
       @cpn_available
     end
+
+    def as_token_text
+      s = self.inspect
+      s << "@" + self.ready?.to_s if !(self.ready?.nil?)
+      s
+    end
+
   end
 end
 

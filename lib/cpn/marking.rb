@@ -49,6 +49,12 @@ module CPN
       @tokens
     end
 
+    def as_json
+      @tokens.map do |t|
+        t.respond_to?(:as_token_text) ? t.as_token_text : t.inspect
+      end
+    end
+
     def to_s
       @tokens.to_s
     end
