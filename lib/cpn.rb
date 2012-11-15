@@ -27,7 +27,7 @@ module CPN
   module TimedAvailability
     def ready_at(t)
       puts "Setting token availability #{self}@#{t}" if($debug)
-      @cpn_available = t
+      @cpn_available = t && t.to_f
       self
     end
 
@@ -46,7 +46,7 @@ module CPN
 
     def as_token_text
       s = self.inspect
-      s << "@" + self.ready?.to_s if !(self.ready?.nil?)
+      s << "@" + self.ready?.to_s.gsub(/\.(\d{2}).*/,'.\1') if !(self.ready?.nil?)
       s
     end
 

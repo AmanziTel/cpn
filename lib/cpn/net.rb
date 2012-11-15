@@ -214,6 +214,24 @@ module CPN
       occur_next
     end
 
+    def occur_all_ready
+      while !ready_transitions.empty?
+        occur_next
+      end
+    end
+
+    def occur_by_time(steps = 1)
+      steps.times do |step|
+        occur_all_ready
+        @time += 1
+        fire(:tick)
+      end
+    end
+
+    def finished?
+      min_distance_to_valid_combo.nil?
+    end
+
     def advance_time
       d = min_distance_to_valid_combo
       @time += d unless d.nil?

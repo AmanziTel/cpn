@@ -17,10 +17,18 @@ module CPN
       plan.build_cpn
     end
 
-    def threat(vulnerability, name, attributes = {}, &block)
+    def threat(vulnerability, description, attributes = {}, &block)
       @threats ||= {}
-      @threats[name] = Threat.new(self, name, vulnerability, attributes)
-      @threats[name].instance_eval(&block) if(block_given?)
+      threat = Threat.new(self, description, vulnerability, attributes)
+      @threats[threat.name] = threat
+      @threats[threat.name].instance_eval(&block) if(block_given?)
+    end
+
+    def threats(*args)
+      vulnerability = args.shift
+      args.each do |description|
+        threat vulnerability, description
+      end
     end
 
     def recovery(threat_name, name)
@@ -59,14 +67,19 @@ module CPN
 
   end
 
+  module ThreatToken
+    attr_accessor :threat, :recovery
+  end
+
   class Threat
-    attr_reader :builder, :name, :vulnerability, :attributes
+    attr_reader :builder, :name, :vulnerability, :attributes, :after
     attr_accessor :recovery
     def initialize(builder, name, vulnerability, attributes = {})
       @builder = builder
-      @name = name
+      @name = name.split(/@/)[0]
       @vulnerability = vulnerability
       @attributes = attributes
+      @after = name.split(/@/)[1] || attributes[:ready_at] || attributes[:after]
     end
     def state
       @state ||= vulnerability && builder.find_node(vulnerability)
@@ -77,12 +90,14 @@ module CPN
     def token
       unless @token
         @token = attributes[:token] || name
-        @token.ready_at(attributes[:ready_at]) if(attributes[:ready_at])
+        @token.ready_at(after)
+        this_threat = self
+        class << @token
+          include ThreatToken
+        end
+        @token.threat = self
       end
       @token
-    end
-    def ready_at
-      attributes[:ready_at].to_i
     end
     def to_s
       name
@@ -275,6 +290,14 @@ module CPN
     def repair(name, options = {})
       @step = RepairStep.new(self, name, @step, options)
       repairs << @step
+    end
+    def recovery(threat_name, name)
+      if repair = @repairs.reject {|repair| !(repair.transition_name === name)}[0]
+        repair.options[:threat] = threat_name
+        builder.recovery threat_name, repair.transition_name
+      else
+        raise "Recovery '#{name}' was not found in known repair steps. Be sure to define the recovery after the repair."
+      end
     end
     def layout(map={})
       @layout_map.merge! map
