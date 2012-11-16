@@ -34,6 +34,7 @@ module CPN
         t = at.token
         at.arc.remove_token(t)
         t.ready_at(0) if t.respond_to? :ready_at
+        t.on_transition(self) if t.respond_to? :on_transition
         states << at.arc.from
       end
 

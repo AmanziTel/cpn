@@ -1,4 +1,5 @@
 require File.expand_path("#{File.dirname __FILE__}/dsl_builder")
+require File.expand_path("#{File.dirname __FILE__}/net")
 
 module CPN
 
@@ -19,7 +20,10 @@ module CPN
 
     def threat(vulnerability, description, attributes = {}, &block)
       @threats ||= {}
-      threat = Threat.new(self, description, vulnerability, attributes)
+      threat = Threat.new(description, vulnerability, attributes)
+      threat.builder = self
+      threat.net = @page.net
+      @page.net.threats << threat
       @threats[threat.name] = threat
       @threats[threat.name].instance_eval(&block) if(block_given?)
     end
@@ -40,41 +44,76 @@ module CPN
     end
 
     def setup_threats
-      if(@threats)
-        puts "Processing threats: #{@threats.inspect}"
-        @threats.each do |name,threat|
-          puts "Processing threat: #{threat}"
-          if threat.state
-            threat.state.add_token threat.token, true if(threat.token)
-            if threat.recovery
-              if threat.transition
-                threat.state.properties[:recoveries] ||= []
-                threat.state.properties[:recoveries] << threat.recovery
-                threat.transition.properties[:vulnerability] = threat.vulnerability
-                threat.transition.properties[:threat] = threat.name
-              else
-                raise "Cannot configure threat '#{threat}': No such recovery transition '#{threat.recovery}'"
-              end
-            else
-              raise "Threat '#{threat}' invalid: no recovery defined"
-            end
-          else
-            raise "Cannot configure threat '#{threat}': No such vulnerability state '#{threat.vulnerability}'"
-          end
-        end
-      end
+      @page.net.setup_threats
     end
 
   end
 
+  # Re-open the net class and add a results method for the CPLAN results
+  class Net
+    alias_method :network_reset, :reset
+    def reset
+      network_reset
+      setup_threats
+    end
+    def setup_threats
+      threats.each do |threat|
+        puts "Processing threat: #{threat}"
+        if threat.state
+          threat.state.add_token threat.token, false if(threat.token)
+          if threat.recovery
+            if threat.transition
+              threat.state.properties[:recoveries] ||= []
+              threat.state.properties[:recoveries] << threat.recovery
+              threat.transition.properties[:vulnerability] = threat.vulnerability
+              threat.transition.properties[:threat] = threat.name
+            else
+              raise "Cannot configure threat '#{threat}': No such recovery transition '#{threat.recovery}'"
+            end
+          else
+            raise "Threat '#{threat}' invalid: no recovery defined"
+          end
+        else
+          raise "Cannot configure threat '#{threat}': No such vulnerability state '#{threat.vulnerability}'"
+        end
+      end
+    end
+    def threats
+      @threats ||= []
+    end
+    def results
+      @results_net_time = time
+      if @resuls.nil? || @prev_results_net_time.nil? || @prev_results_net_time != @results_net_time
+        failed = []
+        @results = threats.map do |threat|
+          failed << threat.name unless(threat.token.recovery)
+          {:threat => {:name => threat.name, :recovery => threat.token.recovery, :path => threat.token.transitions}}
+        end
+        @results.unshift(:failed => failed) if(failed.length>0)
+      end
+      @prev_results_net_time = @results_net_time
+      @results
+    end
+  end
+
   module ThreatToken
     attr_accessor :threat, :recovery
+    def on_transition(transition)
+      if self.threat && transition.properties[:threat] && transition.properties[:threat].to_s == self.threat.to_s
+        self.recovery = transition.name
+      end
+      @transitions ||= []
+      @transitions << transition.name
+    end
+    def transitions
+      @transitions ||= []
+    end
   end
 
   class Threat
-    attr_reader :builder, :name, :vulnerability, :attributes, :after
-    attr_accessor :recovery
-    def initialize(builder, name, vulnerability, attributes = {})
+    attr_reader :name, :vulnerability, :attributes, :after
+    attr_accessor :recovery, :builder, :net
+    def initialize(name, vulnerability, attributes = {})
       @builder = builder
       @name = name.split(/@/)[0]
       @vulnerability = vulnerability
@@ -87,11 +126,14 @@ module CPN
     def transition
       @transition ||= recovery && builder.find_node(recovery)
     end
+    def reset
+      @token = nil
+      token
+    end
     def token
       unless @token
         @token = attributes[:token] || name
         @token.ready_at(after)
-        this_threat = self
         class << @token
           include ThreatToken
         end
@@ -242,7 +284,7 @@ module CPN
         puts "Making transition '#{name}' using component in prototype '#{template}'"
         builder.page template, "/nets/IT/Components/TokenMatchSwitch.rb",
           :token_match_expressions => token_matches_values,
-          :token_match_transitions => token_matches_keys.map{|k| "#{k} It"},
+          :token_match_transitions => token_matches_keys.map{|k| "#{k} #{name}"},
           :token_match_states => token_matches_keys,
           :token_match_input => template
         @transition.prototype = template

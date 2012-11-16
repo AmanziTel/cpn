@@ -44,7 +44,7 @@ module CPN
     end
 
     def reset
-      @marking.set(eval("[ #{@initial && @initial.to_s.gsub(/\@(\d+)/,'.ready_at(\1)')} ]"))
+      @marking.set(eval("[ #{@initial && @initial.to_s.gsub(/\@([\d\.]+)/,'.ready_at(\1)')} ]"))
     end
 
     def fuse_with(source_state)
