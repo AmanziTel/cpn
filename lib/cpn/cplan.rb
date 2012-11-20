@@ -141,6 +141,9 @@ module CPN
       end
       @token
     end
+    def to_hash
+      {:name => name, :recovery => recovery, :token => token, :recovered => token.recovery, :path => token.transitions, :state => state, :transition => transition, :after => after}
+    end
     def to_s
       name
     end

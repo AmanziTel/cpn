@@ -67,7 +67,7 @@ module CPN
     end
 
     def to_hash
-      super.merge(:guard => guard)
+      super.merge(:guard => (guard && guard.clone))
     end
 
     def to_s

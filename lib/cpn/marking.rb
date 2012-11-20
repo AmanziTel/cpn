@@ -46,7 +46,7 @@ module CPN
     end
 
     def to_hash
-      @tokens
+      @tokens.map{|t| t.clone}
     end
 
     def as_json

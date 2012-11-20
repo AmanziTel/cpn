@@ -19,7 +19,7 @@ module CPN
     end
 
     def a2h(array, use_2h = false)
-      array.map{|v| v.respond_to?('to_hash') ? v.to_hash : ((use_2h && v.respond_to?('to_hash')) ? v.to_hash : v.to_s)}
+      array.map{|v| v.respond_to?('to_hash') ? v.to_hash : ((use_2h && v.respond_to?('to_hash')) ? v.to_hash : (v && v.clone.to_s))}
     end
 
     # Utility method to make the data structure easier to convert to JSON
@@ -29,7 +29,7 @@ module CPN
       ).merge(
         outgoing.length>0 ? {:outgoing => a2h(outgoing)} : {}
       ).merge(
-        properties.length>0 ? {:properties => properties} : {}
+        properties.length>0 ? {:properties => properties.clone} : {}
       )
     end
 
