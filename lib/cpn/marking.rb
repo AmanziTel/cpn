@@ -46,7 +46,9 @@ module CPN
     end
 
     def to_hash
-      @tokens.map{|t| t.clone}
+      @tokens.map do |t|
+        t.respond_to?(:ready?) ? t.clone : t
+      end
     end
 
     def as_json

@@ -3,7 +3,7 @@ module CPN
   # The Arc connects two nodes together, a state and a transition.
   # The optional expression is evaluated on entering the transition.
   class Arc
-    attr_accessor :from, :to, :expr
+    attr_accessor :from, :to, :expr, :hints
 
     def initialize(from, to)
       @from, @to = from, to

@@ -199,6 +199,7 @@ module CPN
       # Build the arc and connect to state or transition
         a = Arc.new(from, to)
         a.expr = options[:expr] unless options[:expr].nil?
+        a.hints = options[:hints] unless options[:hints].nil?
         a.instance_eval &block if block_given?
         from.outgoing << a
         to.incoming << a

@@ -138,6 +138,8 @@ module CPN
           include ThreatToken
         end
         @token.threat = self
+        @token.recovery = nil
+        @token.transitions.clear
       end
       @token
     end
