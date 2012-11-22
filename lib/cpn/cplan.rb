@@ -346,6 +346,7 @@ module CPN
         raise "Recovery '#{name}' was not found in known repair steps. Be sure to define the recovery after the repair."
       end
     end
+    alias_method :countermeasure, :recovery
     def layout(map={})
       @layout_map.merge! map
     end
