@@ -79,6 +79,9 @@ module CPN
       end
     end
 
+    # A page is a sub-component, which in itself is a petri net
+    # This command will make that page, and it can then be used
+    # later with the hs_transition code
     def page(name, path = nil, cmd_params = {}, &block)
       name = name.to_s.intern
       p = Page.new(name, @page)
@@ -174,10 +177,21 @@ module CPN
       @page.add_transition(t)
     end
 
-    def hs_transition(name, &block)
+    # Make a special kind of transition that wraps a component
+    # The component should already be defined previously using
+    # the page command. It is possible to combine the page and
+    # hs_transition commands by passing the path and optional
+    # cmd_params to hs_transition directly.
+    def hs_transition(name, path = nil, cmd_params = {}, &block)
+      puts "Creating wrapper transition '#{name}', path=#{path}, params=#{cmd_params}"
       name = name.to_s.intern
       subpage = Page.new(name, @page)
       subpage.builder = self
+      if path
+        proto_name = "#{name}#{path.gsub(/\.rb$/i,'').split(/\//)[-1]}"
+        prototype = page(proto_name, path, cmd_params)
+        subpage.prototype = prototype
+      end
       subpage.instance_eval &block if block_given?
       @page.add_transition(subpage)
     end
