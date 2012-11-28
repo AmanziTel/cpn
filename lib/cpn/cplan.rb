@@ -64,7 +64,10 @@ module CPN
       threats.each do |threat|
         puts "Processing threat: #{threat}"
         if threat.state
-          threat.state.add_token threat.token, false if(threat.token)
+          if(threat.token)
+            threat.state.remove_token threat.token, false
+            threat.state.add_token threat.token, false
+          end
           if threat.recovery
             if threat.transition
               threat.state.properties[:recoveries] ||= []
@@ -80,6 +83,7 @@ module CPN
           else
             raise "Threat '#{threat}' invalid: no recovery defined"
           end
+          self.fire(:state_changed, threat.state)
         else
           raise "Cannot configure threat '#{threat}': No such vulnerability state '#{threat.vulnerability}'"
         end
