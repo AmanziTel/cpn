@@ -33,7 +33,14 @@ module CPN
     # 4- any methods registered with the 'after_load' class method
     # The before_load and after_load methods are available for extension of the DSL.
     def self.build_net(name, path = nil, &block)
-      net = Net.new(name)
+      extend_net(Net.new(name), path, &block)
+    end
+
+    # The work done by to build a new net or extend an exiting one
+    # is identical except for the creation of the blank network.
+    # So this method is doing all the work for both, and build_net
+    # calls it.
+    def self.extend_net(net, path = nil, &block)
       builder = DSLBuilder.new(net)
       builder.call_methods @before_load
       if path = builder.clean_path(path)
@@ -125,7 +132,7 @@ module CPN
     end
 
     def find_node(name)
-      name = name.to_s.intern
+      name = name.to_s.gsub(/^([\'\"])(.*)\1$/,'\2').intern
       @page.states[name] || @page.transitions[name] || puts("State or Transition not found: #{name}")
     end
 

@@ -31,10 +31,13 @@ module CPN
       @tokens.length
     end
 
-    def delete(t)
+    def delete(t,error_on_missing=true)
       i = @tokens.index(t)
-      raise "Unknown token #{t}" if i.nil?
-      @tokens.delete_at(i)
+      if i
+        @tokens.delete_at(i)
+      elsif error_on_missing
+        raise "Unknown token #{t} (#{@tokens.inspect})"
+      end
     end
 
     def fuse_with(marking)

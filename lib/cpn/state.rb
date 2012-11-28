@@ -26,6 +26,7 @@ module CPN
     end
 
     def add_token(token, modify_initial = false)
+      @marking.delete(token,false)
       @marking << token
       @initial = @marking.as_json.join(', ') if(modify_initial)
     end

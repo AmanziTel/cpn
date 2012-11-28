@@ -19,10 +19,11 @@ module CPN
     end
 
     def threat(vulnerability, description, attributes = {}, &block)
-      @threats ||= {}
+      @threats ||= @page.net.threat_map
       threat = Threat.new(description, vulnerability, attributes)
       threat.builder = self
       threat.net = @page.net
+      @page.net.threats.reject!{|t| t.name == threat.name}
       @page.net.threats << threat
       @threats[threat.name] = threat
       @threats[threat.name].instance_eval(&block) if(block_given?)
@@ -36,12 +37,15 @@ module CPN
     end
 
     def recovery(threat_name, name)
-      if threat = @threats && @threats[threat_name]
+      @threats ||= @page.net.threat_map
+      if threat = @threats[threat_name]
         threat.recovery = name
       else
         raise "Recovery '#{name}' cannot find matching threat: #{threat_name}"
       end
     end
+
+    alias_method :countermeasure, :recovery
 
     def setup_threats
       @page.net.setup_threats
@@ -64,9 +68,12 @@ module CPN
           if threat.recovery
             if threat.transition
               threat.state.properties[:recoveries] ||= []
+              threat.state.properties[:recoveries].delete(threat.recovery)
               threat.state.properties[:recoveries] << threat.recovery
               threat.transition.properties[:vulnerability] = threat.vulnerability
-              threat.transition.properties[:threat] = threat.name
+              threat.transition.properties[:threats] ||= []
+              threat.transition.properties[:threats].delete(threat.name)
+              threat.transition.properties[:threats] << threat.name
             else
               raise "Cannot configure threat '#{threat}': No such recovery transition '#{threat.recovery}'"
             end
@@ -80,6 +87,15 @@ module CPN
     end
     def threats
       @threats ||= []
+    end
+    def threat_map
+      threats.inject({}) do |m,t|
+        m[t.name] = t
+        m
+      end
+    end
+    def describe
+      "Threats(#{threats.map{|t| "#{t}->#{t.recovery||'?'}"}.join(', ')})"
     end
     def results
       @results_net_time = time
@@ -99,7 +115,7 @@ module CPN
   module ThreatToken
     attr_accessor :threat, :recovery
     def on_transition(transition)
-      if self.threat && transition.properties[:threat] && transition.properties[:threat].to_s == self.threat.to_s
+      if self.threat && transition.properties[:threats] && transition.properties[:threats].grep(/#{self.threat.to_s}/).length>0
         self.recovery = transition.name
       end
       @transitions ||= []
@@ -114,11 +130,21 @@ module CPN
     attr_reader :name, :vulnerability, :attributes, :after
     attr_accessor :recovery, :builder, :net
     def initialize(name, vulnerability, attributes = {})
+      puts "Creating threat name=#{name}, vulnerability=#{vulnerability}, attributes=#{attributes.inspect}"
+      if attributes.is_a? String
+        attributes = attributes.split(/\,/).inject({}) do |h,n|
+          k,v = n.split(/\:/)
+          h[k.to_s.intern] = v
+          h
+        end
+        puts "Parsed threat attributes: #{attributes.inspect}"
+      end
       @builder = builder
       @name = name.split(/@/)[0]
       @vulnerability = vulnerability
       @attributes = attributes
       @after = name.split(/@/)[1] || attributes[:ready_at] || attributes[:after]
+      @recovery = attributes[:recovery]
     end
     def state
       @state ||= vulnerability && builder.find_node(vulnerability)
