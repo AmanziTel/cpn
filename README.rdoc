@@ -103,7 +103,7 @@ The visual representation of a transition is a rectangle that lights up in a fla
 when it fires. Imagine tokens moving through the rectangle when it fires, from its
 inputs to its outputs.
 
-== License ==
+== License
 
 Copyright 2012 AmanziTel AB
 
