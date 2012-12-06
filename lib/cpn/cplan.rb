@@ -317,7 +317,7 @@ module CPN
 
         # Make the template and then create the transition based on it
         puts "Making transition '#{name}' using component in prototype '#{template}'"
-        builder.page template, "/nets/IT/Components/TokenMatchSwitch.rb",
+        builder.page template, "/inmotos-components/IT/Components/TokenMatchSwitch.rb",
           :token_match_expressions => token_matches_values,
           :token_match_transitions => token_matches_keys.map{|k| "#{k} #{name}"},
           :token_match_states => token_matches_keys,

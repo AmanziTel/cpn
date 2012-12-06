@@ -75,10 +75,11 @@ module CPN
     def clean_path(path)
       if path
         if path =~ /^\//
-          "public/library/#{path}"
+          "../#{path}"
         elsif @page.path.nil?
           path
         else
+          puts "Prefixing path #{path} with directory #{File.dirname(@page.path)}" if($debug)
           "#{File.dirname(@page.path)}/#{path}"
         end
       else
@@ -100,7 +101,7 @@ module CPN
       puts "Child params: #{builder.params.inspect}" if($debug)
       if path = clean_path(path)
         p.path = path
-        puts "Loading page using builder: #{builder}" if($debug)
+        puts "Loading page from path=#{path} using builder: #{builder}" if($debug)
         builder.instance_eval(File.read(path))
         puts "Child params after loading #{path}: #{builder.params.inspect}" if($debug)
       end
